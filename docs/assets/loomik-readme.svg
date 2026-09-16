@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title description">
+<title id="title">Loomik — your screen, your voice</title>
+<desc id="description">A product illustration showing a demo desktop, floating settings, recording controls and an illustrated webcam circle. No real screen or camera data.</desc>
+<defs><filter id="shadow" x="-25%" y="-25%" width="150%" height="175%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#283047" flood-opacity=".12"/></filter>
+<clipPath id="camera"><circle cx="796" cy="637" r="84"/></clipPath></defs>
+<g font-family="Arial, Helvetica, sans-serif"><rect x="0" y="0" width="1600" height="900" rx="32" fill="#F5F6F8" />
+<g transform="translate(82 74) scale(0.59375)">
+      <rect width="128" height="128" rx="32" fill="#26272B"/>
+      <path d="M37 33V91H91" fill="none" stroke="#EF4B2B" stroke-width="19" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="89" cy="37" r="14" fill="#EF4B2B"/>
+    </g>
+<text x="180" y="129" font-size="58" fill="#26272B" font-weight="700" letter-spacing="-2.5">Loomik</text>
+<text x="82" y="284" font-size="82" fill="#26272B" font-weight="700" letter-spacing="-3.5">Your screen.</text>
+<text x="82" y="378" font-size="82" fill="#26272B" font-weight="700" letter-spacing="-3.5">Your voice.</text>
+<text x="86" y="445" font-size="26" fill="#747984" font-weight="400" >Record a screen. Add your camera.</text>
+<text x="86" y="483" font-size="26" fill="#747984" font-weight="400" >Keep every take on your Mac.</text>
+<rect x="86" y="544" width="210" height="52" rx="26" fill="#26272B" />
+<text x="112" y="577" font-size="21" fill="#FFFFFF" font-weight="600" >Built with Rust</text>
+<text x="88" y="669" font-size="20" fill="#747984" font-weight="500" letter-spacing="1">MP4  /  MOV  /  MKV</text>
+<text x="88" y="712" font-size="21" fill="#747984" font-weight="400" >No account. No recording time limit.</text>
+<rect x="705" y="177" width="812" height="476" rx="24" fill="#FFFFFF" filter="url(#shadow)"/>
+<rect x="705" y="177" width="812" height="476" rx="24" fill="none" stroke="#E1E4EA"/>
+<path d="M705 237H1517" stroke="#E8EAF0"/>
+<circle cx="733" cy="207" r="6" fill="#F08B80"/>
+<circle cx="754" cy="207" r="6" fill="#EFCC79"/>
+<circle cx="775" cy="207" r="6" fill="#9ACAA8"/>
+<text x="816" y="213" font-size="18" fill="#747984" font-weight="400" >Project walkthrough</text>
+<text x="750" y="300" font-size="37" fill="#26272B" font-weight="700" letter-spacing="-1">A clear idea,</text>
+<text x="750" y="347" font-size="37" fill="#26272B" font-weight="700" letter-spacing="-1">ready to share.</text>
+<rect x="750" y="389" width="300" height="8" rx="4" fill="#E9EBEF" />
+<rect x="750" y="414" width="336" height="8" rx="4" fill="#E9EBEF" />
+<rect x="750" y="439" width="251" height="8" rx="4" fill="#E9EBEF" />
+<rect x="750" y="501" width="80" height="72" rx="14" fill="#F6F7F9" />
+<rect x="875" y="501" width="80" height="72" rx="14" fill="#F6F7F9" />
+<rect x="1000" y="501" width="80" height="72" rx="14" fill="#F6F7F9" />
+<path d="M776 522H803V542H776Z M782 548H798 M789 542V548" fill="none" stroke="#818896" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M902 522L925 536L902 550Z" fill="#EF4B2B"/>
+<path d="M1026 536L1036 546L1055 526" fill="none" stroke="#818896" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M841 536H863M966 536H988" stroke="#CDD2DB" stroke-width="2" stroke-dasharray="3 5"/>
+<rect x="1165" y="111" width="306" height="441" rx="24" fill="#FFFFFF" filter="url(#shadow)"/>
+<rect x="1165" y="111" width="306" height="441" rx="24" fill="none" stroke="#E3E6EC"/>
+<g transform="translate(1187 133) scale(0.234375)">
+      <rect width="128" height="128" rx="32" fill="#26272B"/>
+      <path d="M37 33V91H91" fill="none" stroke="#EF4B2B" stroke-width="19" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="89" cy="37" r="14" fill="#EF4B2B"/>
+    </g>
+<text x="1227" y="157" font-size="21" fill="#26272B" font-weight="600" >Loomik</text>
+<path d="M1433 143L1444 154M1444 143L1433 154" stroke="#858B95" stroke-width="1.8" stroke-linecap="round"/>
+<rect x="1187" y="188" width="262" height="40" rx="11" fill="#F1F2F4" />
+<rect x="1191" y="192" width="126" height="32" rx="8" fill="#FFFFFF" />
+<text x="1226" y="214" font-size="14" fill="#1966E2" font-weight="400" >Video</text>
+<text x="1360" y="214" font-size="14" fill="#747984" font-weight="400" >Photo</text>
+<rect x="1187" y="248" width="262" height="52" rx="12" fill="#F1F2F4" />
+<text x="1240" y="280" font-size="15" fill="#26272B" font-weight="400" >Display 1</text>
+<path d="M1420 272L1425 277L1430 272" fill="none" stroke="#26272B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="1205" y="264" width="20" height="14" rx="2" fill="none" stroke="#26272B" stroke-width="1.6"/>
+<path d="M1215 278V283M1210 283H1220" stroke="#26272B" stroke-width="1.6"/>
+<rect x="1187" y="310" width="262" height="52" rx="12" fill="#F1F2F4" />
+<text x="1240" y="342" font-size="15" fill="#26272B" font-weight="400" >Camera</text>
+<path d="M1420 334L1425 339L1430 334" fill="none" stroke="#26272B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M1205 328H1219V342H1205Z M1219 332L1225 329V341L1219 338" fill="none" stroke="#26272B" stroke-width="1.6" stroke-linejoin="round"/>
+<rect x="1187" y="372" width="262" height="52" rx="12" fill="#1966E2" />
+<text x="1240" y="404" font-size="15" fill="#FFFFFF" font-weight="400" >Microphone</text>
+<path d="M1420 396L1425 401L1430 396" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="1211" y="386" width="8" height="15" rx="4" fill="none" stroke="#FFFFFF" stroke-width="1.6"/>
+<path d="M1207 396V398A8 8 0 0 0 1223 398V396M1215 406V411" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round"/>
+<text x="1191" y="447" font-size="13" fill="#747984" font-weight="400" >MP4 · 30 fps</text>
+<rect x="1187" y="468" width="262" height="52" rx="12" fill="#EF4B2B" />
+<text x="1245" y="500" font-size="16" fill="#FFFFFF" font-weight="600" >Start Recording</text>
+<circle cx="796" cy="637" r="90" fill="#FFFFFF" filter="url(#shadow)"/>
+<g clip-path="url(#camera)">
+<circle cx="796" cy="637" r="84" fill="#EFD9C9"/>
+<path d="M712 736C716 665 744 652 796 652C847 652 878 665 881 736" fill="#30353F"/>
+<path d="M779 638H813V675Q796 690 779 675Z" fill="#C68E72"/>
+<ellipse cx="796" cy="613" rx="36" ry="47" fill="#D8A588"/>
+<path d="M760 614C747 568 787 554 814 572C838 570 842 602 831 626L822 599C805 606 780 603 770 594Z" fill="#30353F"/>
+<path d="M784 627Q796 636 808 627" fill="none" stroke="#915F4C" stroke-width="3" stroke-linecap="round"/>
+<circle cx="783" cy="613" r="2.5" fill="#30353F"/><circle cx="808" cy="613" r="2.5" fill="#30353F"/>
+</g>
+<rect x="935" y="674" width="431" height="80" rx="40" fill="#26272B" filter="url(#shadow)"/>
+<circle cx="983" cy="714" r="24" fill="#EF4B2B"/>
+<rect x="975" y="706" width="16" height="16" rx="3" fill="#FFFFFF" />
+<text x="1025" y="723" font-size="27" fill="#FFFFFF" font-weight="500" font-family="Menlo, Consolas, monospace">02:34</text>
+<path d="M1132 701V726M1142 701V726" stroke="#E5E7ED" stroke-width="5" stroke-linecap="round"/>
+<path d="M1188 698V730M1197 698V730" stroke="#666A75" stroke-width="1"/>
+<path d="M1231 713A12 12 0 1 1 1236 725M1227 702L1232 714L1244 709" fill="none" stroke="#D0D4DF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M1288 707H1311M1288 720H1311" stroke="#D0D4DF" stroke-width="2" stroke-linecap="round"/>
+<circle cx="1295" cy="707" r="3.5" fill="#26272B" stroke="#D0D4DF" stroke-width="1.5"/><circle cx="1305" cy="720" r="3.5" fill="#26272B" stroke="#D0D4DF" stroke-width="1.5"/>
+<path d="M84 806H1516" stroke="#DEE2E8"/>
+<text x="86" y="851" font-size="19" fill="#747984" font-weight="400" >Screen + camera + microphone</text>
+<text x="1516" y="851" font-size="19" fill="#747984" font-weight="400" text-anchor="end">Native Rust recorder for macOS</text></g>
+</svg>

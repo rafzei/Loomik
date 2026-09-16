@@ -1,0 +1,55 @@
+[package]
+name = "loomik"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "A private, floating screen and media recorder"
+repository = "https://github.com/rafzei/Loomik.git"
+license = "MIT"
+
+[dependencies]
+anyhow = "1"
+chrono = "0.4"
+crossbeam-channel = "0.5"
+directories = "6"
+eframe = { version = "0.33.3", default-features = false, features = ["default_fonts", "glow", "persistence", "x11", "wayland"] }
+egui-phosphor = "0.11"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+rfd = "0.15"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+block2 = "0.6"
+objc2-avf-audio = "0.3"
+core-foundation = "0.9"
+core-graphics = "0.23"
+dispatch2 = "0.3"
+objc2 = "0.6"
+objc2-foundation = "0.3"
+objc2-av-foundation = { version = "0.3", features = ["AVCaptureDevice", "AVCaptureInput", "AVCaptureSession", "AVCaptureSessionPreset", "AVCaptureVideoDataOutput", "AVCaptureOutputBase", "AVMediaFormat", "block2", "dispatch2", "objc2-core-media", "objc2-core-video"] }
+objc2-core-media = "0.3"
+objc2-core-video = "0.3"
+screencapturekit = { version = "10.0.3", features = ["macos_13_0"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-capture = "2.0.1"
+cpal = "0.18.2"
+fast_image_resize = "6"
+windows = { version = "0.62.2", features = ["Devices_Enumeration", "Foundation", "Media_Capture", "Media_Capture_Frames", "Media_MediaProperties", "Media_Devices", "Graphics_Imaging", "Win32_Foundation", "Win32_Graphics_Gdi", "Win32_Graphics_Dwm", "Win32_System_Performance", "Win32_System_WinRT", "Win32_UI_WindowsAndMessaging", "Win32_UI_HiDpi"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"
+
+[package.metadata.bundle]
+name = "Loomik"
+# Keep the installed application's identity stable across the branding rename.
+identifier = "com.local-loom.recorder"
+category = "Video"
+osx_minimum_system_version = "13.0"

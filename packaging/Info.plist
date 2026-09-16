@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleName</key><string>Loomik</string>
+  <key>CFBundleDisplayName</key><string>Loomik</string>
+  <!-- Stable identity preserves previously granted macOS privacy permissions. -->
+  <key>CFBundleIdentifier</key><string>com.local-loom.recorder</string>
+  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleShortVersionString</key><string>0.1.0</string>
+  <key>CFBundleExecutable</key><string>loomik</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>LSMinimumSystemVersion</key><string>13.0</string>
+  <key>LSApplicationCategoryType</key><string>public.app-category.video</string>
+  <key>NSHighResolutionCapable</key><true/>
+  <key>NSCameraUsageDescription</key><string>Loomik uses your selected camera to show and record a floating camera circle.</string>
+  <key>NSMicrophoneUsageDescription</key><string>Loomik records the microphone you select with your screen video.</string>
+  <key>NSScreenCaptureUsageDescription</key><string>Loomik records the screen or window you choose and saves it on your Mac.</string>
+  <key>NSCameraUseContinuityCameraDeviceType</key><true/>
+</dict></plist>

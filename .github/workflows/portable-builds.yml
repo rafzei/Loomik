@@ -1,0 +1,46 @@
+name: Portable source and media checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, windows-2022, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: macOS dependencies
+        if: runner.os == 'macOS'
+        run: brew install ffmpeg
+      - name: Windows dependencies
+        if: runner.os == 'Windows'
+        run: choco install ffmpeg --no-progress -y
+      - name: Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg pkg-config libegl1-mesa-dev libxkbcommon-dev libwayland-dev libx11-dev libxcursor-dev libxi-dev libxrandr-dev libxinerama-dev
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --locked -- -D warnings
+      - run: cargo test --all-targets --locked
+      - run: cargo build --release --locked
+      - name: Build macOS app
+        if: runner.os == 'macOS'
+        run: bash scripts/bundle.sh
+      # These are build artifacts, not a claim of native capture feature parity.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: loomik-${{ runner.os }}-build
+          path: |
+            target/release/loomik
+            target/release/loomik.exe
+            target/release/bundle/Loomik.app
+          if-no-files-found: error
