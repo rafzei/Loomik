@@ -13,6 +13,18 @@ pub fn ffmpeg_path() -> Result<PathBuf> {
 pub fn ffprobe_path() -> Result<PathBuf> {
     tool_path("ffprobe", "LOOMIK_FFPROBE")
 }
+/// Native GUI builds must not create FFmpeg console windows over the desktop.
+pub fn media_command(program: impl AsRef<std::ffi::OsStr>) -> Command {
+    let mut command = Command::new(program);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+    // Keep the same builder on non-Windows platforms.
+    let _ = &mut command;
+    command
+}
 fn tool_path(name: &str, variable: &str) -> Result<PathBuf> {
     let executable = format!("{name}{}", std::env::consts::EXE_SUFFIX);
     let mut candidates = Vec::new();
@@ -36,7 +48,7 @@ fn tool_path(name: &str, variable: &str) -> Result<PathBuf> {
         PathBuf::from(&executable),
     ]);
     for path in candidates {
-        if Command::new(&path)
+        if media_command(&path)
             .arg("-version")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -53,9 +65,38 @@ fn tool_path(name: &str, variable: &str) -> Result<PathBuf> {
 
 /// Probe a real hardware session at the requested dimensions. Merely listing
 /// an FFmpeg codec does not prove that hardware encoding is available.
+#[cfg(target_os = "windows")]
+fn windows_encoder_options(backend: &str) -> &'static [&'static str] {
+    match backend {
+        "h264_nvenc" => &[
+            "-preset",
+            "p1",
+            "-tune",
+            "ull",
+            "-rc",
+            "cbr",
+            "-rc-lookahead",
+            "0",
+            "-zerolatency",
+            "1",
+            "-delay",
+            "0",
+        ],
+        "h264_qsv" => &[
+            "-preset",
+            "veryfast",
+            "-async_depth",
+            "1",
+            "-look_ahead",
+            "0",
+        ],
+        "h264_amf" => &["-usage", "ultralowlatency", "-quality", "speed"],
+        _ => &[],
+    }
+}
 fn choose_backend(ffmpeg: &Path, width: u32, height: u32) -> (&'static str, Option<String>) {
     if cfg!(target_os = "macos") {
-        let result = Command::new(ffmpeg)
+        let result = media_command(ffmpeg)
             .args([
                 "-hide_banner",
                 "-loglevel",
@@ -99,6 +140,45 @@ fn choose_backend(ffmpeg: &Path, width: u32, height: u32) -> (&'static str, Opti
             Err(error) => return ("libx264", Some(error.to_string())),
         }
     }
+    #[cfg(target_os = "windows")]
+    {
+        let mut failures = Vec::new();
+        for backend in ["h264_nvenc", "h264_qsv", "h264_amf"] {
+            let result = media_command(ffmpeg)
+                .args([
+                    "-v",
+                    "error",
+                    "-nostdin",
+                    "-f",
+                    "lavfi",
+                    "-i",
+                    &format!("color=size={width}x{height}:rate=30"),
+                    "-frames:v",
+                    "2",
+                    "-c:v",
+                    backend,
+                ])
+                .args(windows_encoder_options(backend))
+                .args([
+                    "-b:v", "4M", "-bf", "0", "-pix_fmt", "yuv420p", "-f", "null", "-",
+                ])
+                .output();
+            match result {
+                Ok(output) if output.status.success() => return (backend, None),
+                Ok(output) => failures.push(format!(
+                    "{backend}: {}",
+                    String::from_utf8_lossy(&output.stderr)
+                        .trim()
+                        .chars()
+                        .take(500)
+                        .collect::<String>()
+                )),
+                Err(e) => failures.push(format!("{backend}: {e}")),
+            }
+        }
+        ("libx264", Some(failures.join("\n")))
+    }
+    #[cfg(not(target_os = "windows"))]
     (
         "libx264",
         Some("Native hardware backend not implemented on this OS".into()),
@@ -150,7 +230,7 @@ impl Encoder {
             Quality::Crisp => "18",
         };
         let (backend, fallback_reason) = choose_backend(&ffmpeg, width, height);
-        let mut command = Command::new(&ffmpeg);
+        let mut command = media_command(&ffmpeg);
         command
             .args([
                 "-hide_banner",
@@ -192,8 +272,21 @@ impl Encoder {
                 "-b:v",
                 &bitrate.to_string(),
             ]);
-        } else {
+        } else if backend == "libx264" {
             command.args(["-preset", "veryfast", "-tune", "zerolatency", "-crf", crf]);
+        }
+        #[cfg(target_os = "windows")]
+        if backend != "libx264" {
+            let factor = match quality {
+                Quality::Compact => 0.09,
+                Quality::Balanced => 0.14,
+                Quality::Crisp => 0.22,
+            };
+            let bitrate =
+                (width as f64 * height as f64 * fps as f64 * factor).max(1_000_000.0) as u64;
+            command
+                .args(windows_encoder_options(backend))
+                .args(["-b:v", &bitrate.to_string()]);
         }
         let mut child = command
             .args(["-bf", "0", "-pix_fmt", "yuv420p", "-g"])
@@ -282,7 +375,7 @@ impl Encoder {
         let temp = self
             .session
             .join(format!("finished.{}", format.extension()));
-        let mut command = Command::new(&self.ffmpeg);
+        let mut command = media_command(&self.ffmpeg);
         command
             .args(["-hide_banner", "-loglevel", "error", "-nostdin", "-n", "-i"])
             .arg(self.session.join("video.mp4"));

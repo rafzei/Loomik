@@ -1,11 +1,26 @@
+#![cfg_attr(
+    all(target_os = "windows", not(debug_assertions)),
+    windows_subsystem = "windows"
+)]
 use loomik::{app::LoomikApp, ui};
 fn main() -> eframe::Result {
+    let args: Vec<String> = std::env::args().collect();
+    if let Some(index) = args.iter().position(|arg| arg == "--verify-package") {
+        let result = args
+            .get(index + 1)
+            .ok_or_else(|| anyhow::anyhow!("Usage: Loomik --verify-package NEW_OUTPUT_DIRECTORY"))
+            .and_then(|path| loomik::package_check::run(std::path::Path::new(path)));
+        if let Err(error) = result {
+            eprintln!("Package verification failed: {error:#}");
+            std::process::exit(1);
+        }
+        return Ok(());
+    }
     // Keep the hook alive on the GUI thread for every root/child viewport.
     // If installation fails, the capture backend reports the failure before
     // publishing frames; file backgrounds can still be used.
     #[cfg(target_os = "windows")]
     let _window_protection = loomik::platform::windows::install().ok();
-    let args: Vec<String> = std::env::args().collect();
     let smoke = args
         .iter()
         .position(|s| s == "--ui-smoke")

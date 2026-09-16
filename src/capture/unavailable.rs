@@ -1,4 +1,4 @@
-//! Capability boundary until native Windows/Linux capture backends are delivered.
+//! Capability boundary for other systems without a native capture backend.
 //! Portable media recording remains usable; unavailable devices are never listed.
 use crate::{
     model::{Bounds, Device, RecordingClock, Source},

@@ -2,7 +2,7 @@
 mod reader;
 use crate::{
     model::{Bounds, Quality},
-    recording::encoder::ffprobe_path,
+    recording::encoder::{ffprobe_path, media_command},
 };
 use anyhow::{Context, Result, ensure};
 use image::ImageDecoder;
@@ -175,7 +175,7 @@ pub fn probe(path: &Path, kind: MediaKind) -> Result<MediaInfo> {
             has_audio: false,
         });
     }
-    let output=Command::new(ffprobe_path()?).args(["-v","error","-protocol_whitelist","file,pipe","-show_entries","stream=codec_type,width,height,sample_aspect_ratio:stream_side_data=rotation:format=duration","-of","json"]).arg(&path).output().context("Cannot inspect the video")?;
+    let output=media_command(ffprobe_path()?).args(["-v","error","-protocol_whitelist","file,pipe","-show_entries","stream=codec_type,width,height,sample_aspect_ratio:stream_side_data=rotation:format=duration","-of","json"]).arg(&path).output().context("Cannot inspect the video")?;
     ensure!(
         output.status.success(),
         "Cannot read this video: {}",

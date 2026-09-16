@@ -1,0 +1,17 @@
+Loomik for macOS 13 or later
+
+Drag Loomik.app into Applications, then launch it. FFmpeg and FFprobe are
+included; Homebrew, Rust and a separate FFmpeg installation are not required.
+Choose the download matching your Mac: arm64 for Apple Silicon, x86_64 for Intel.
+
+This package has an ad-hoc signature and is not Apple notarized.
+If macOS blocks opening it, use System Settings > Privacy & Security > Open
+Anyway for this app after checking that you downloaded it from rafzei/Loomik.
+
+Allow Screen Recording, Camera and Microphone when you choose those features.
+Image/video backgrounds do not need Screen Recording permission. Recordings
+stay on this Mac in the output folder selected in Loomik settings.
+
+The included media tools' licenses, corresponding sources and build recipe are
+inside Loomik.app/Contents/Resources/media-tools. Loomik itself is MIT licensed.
+See https://github.com/rafzei/Loomik for documentation and verified platform status.

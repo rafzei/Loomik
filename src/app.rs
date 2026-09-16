@@ -51,6 +51,10 @@ pub struct LoomikApp {
     sources: Vec<Source>,
     source: usize,
     media: Option<ui::media_canvas::MediaEditor>,
+    #[cfg(target_os = "linux")]
+    capture_canvas: ui::capture_canvas::CaptureCanvas,
+    #[cfg(target_os = "linux")]
+    portal_picker: bool,
     media_loading: bool,
     cameras: Vec<Device>,
     microphones: Vec<Device>,
@@ -118,6 +122,10 @@ impl LoomikApp {
             sources: vec![],
             source: 0,
             media: None,
+            #[cfg(target_os = "linux")]
+            capture_canvas: ui::capture_canvas::CaptureCanvas::default(),
+            #[cfg(target_os = "linux")]
+            portal_picker: false,
             media_loading: false,
             cameras: vec![],
             microphones: vec![],
@@ -227,9 +235,18 @@ impl LoomikApp {
         }
         self.refresh_pending = true;
         self.error = None;
+        #[cfg(target_os = "linux")]
+        {
+            self.portal_picker =
+                request_permission && std::env::var_os("WAYLAND_DISPLAY").is_some();
+        }
         let tx = self.tx.clone();
+        let repaint = self.repaint.clone();
         std::thread::spawn(move || {
             if request_permission {
+                // Let the UI unmap its own windows before a Wayland picker opens.
+                #[cfg(target_os = "linux")]
+                std::thread::sleep(Duration::from_millis(250));
                 capture::request_screen_permission();
             }
             let sources = if capture::screen_permission() {
@@ -238,6 +255,7 @@ impl LoomikApp {
                 Ok(vec![])
             };
             let _ = tx.send(AppEvent::Sources(sources));
+            repaint.request_repaint();
             let devices = (|| -> anyhow::Result<_> {
                 Ok((
                     capture::discover_cameras()?,
@@ -245,6 +263,7 @@ impl LoomikApp {
                 ))
             })();
             let _ = tx.send(AppEvent::Devices(devices.map_err(|e| e.to_string())));
+            repaint.request_repaint();
         });
     }
 
@@ -258,16 +277,22 @@ impl LoomikApp {
                         Err(e) => self.error = Some(e),
                     }
                 }
-                AppEvent::Sources(result) => match result {
-                    Ok(sources) => {
-                        let previous = self.sources.get(self.source).map(|s| (s.kind, s.id));
-                        self.source = previous
-                            .and_then(|p| sources.iter().position(|s| (s.kind, s.id) == p))
-                            .unwrap_or(0);
-                        self.sources = sources;
+                AppEvent::Sources(result) => {
+                    #[cfg(target_os = "linux")]
+                    {
+                        self.portal_picker = false;
                     }
-                    Err(e) => self.error = Some(e),
-                },
+                    match result {
+                        Ok(sources) => {
+                            let previous = self.sources.get(self.source).map(|s| (s.kind, s.id));
+                            self.source = previous
+                                .and_then(|p| sources.iter().position(|s| (s.kind, s.id) == p))
+                                .unwrap_or(0);
+                            self.sources = sources;
+                        }
+                        Err(e) => self.error = Some(e),
+                    }
+                }
                 AppEvent::Devices(result) => {
                     // Sources arrive first; discovery is only complete after
                     // the camera and microphone lists have arrived as well.
@@ -391,6 +416,10 @@ impl LoomikApp {
             })
     }
     fn recording_placement(&self) -> Arc<Mutex<CameraPlacement>> {
+        #[cfg(target_os = "linux")]
+        if self.media.is_none() {
+            return self.capture_canvas.placement.clone();
+        }
         self.media
             .as_ref()
             .map(|m| m.placement.clone())
@@ -408,6 +437,14 @@ impl LoomikApp {
             self.error = Some("Choose a screen or window first.".into());
             return;
         };
+        #[cfg(target_os = "linux")]
+        if self.media.is_none() {
+            self.capture_canvas.prepare(
+                source.dimensions(self.settings.quality),
+                self.camera_id.is_some(),
+                self.settings.mirror_camera,
+            );
+        }
         self.error = None;
         self.last_saved = None;
         self.phase = Phase::Starting;
@@ -433,6 +470,14 @@ impl LoomikApp {
             (bounds.x + bounds.width * 0.5 - 120.0) as f32,
             (bounds.y + bounds.height * 0.5 - 140.0) as f32,
         );
+        #[cfg(target_os = "windows")]
+        if source.requires_screen_permission() {
+            let scale = self.repaint.pixels_per_point();
+            self.countdown_position = pos2(
+                (bounds.x + bounds.width * 0.5) as f32 / scale - 120.0,
+                (bounds.y + bounds.height * 0.5) as f32 / scale - 140.0,
+            );
+        }
         self.collapsed = false;
         self.recording = Some(Recording::spawn(RecordingRequest {
             settings: self.settings.clone(),
@@ -441,6 +486,12 @@ impl LoomikApp {
             camera: self.camera_frames(),
             placement: self.recording_placement(),
         }));
+        let repaint = self.repaint.clone();
+        self.recording
+            .as_ref()
+            .unwrap()
+            .background
+            .set_waker(Arc::new(move || repaint.request_repaint()));
     }
     fn stop(&mut self) {
         self.countdown = None;
@@ -485,6 +536,14 @@ impl LoomikApp {
         };
         self.snapshot_pending = true;
         self.error = None;
+        #[cfg(target_os = "linux")]
+        if self.media.is_none() {
+            self.capture_canvas.prepare(
+                source.dimensions(self.settings.quality),
+                self.camera_id.is_some(),
+                self.settings.mirror_camera,
+            );
+        }
         let settings = self.settings.clone();
         let tx = self.tx.clone();
         let camera = self.camera_frames();
@@ -542,10 +601,16 @@ impl LoomikApp {
     fn settings_panel(&mut self, ctx: &Context) {
         let height = if self.more_settings { 624.0 } else { 458.0 }
             + if self.media.is_some() { 40.0 } else { 0.0 }
-            + if self.sources.is_empty()
+            + if cfg!(target_os = "linux") && self.media.is_none() {
+                if self.sources.is_empty() { 24.0 } else { 64.0 }
+            } else {
+                0.0
+            }
+            + if (self.sources.is_empty() || cfg!(target_os = "linux"))
                 && self.media.is_none()
                 && capture::desktop_supported()
                 && !self.refresh_pending
+                && !self.phase.is_active()
             {
                 40.0
             } else {
@@ -693,6 +758,11 @@ impl LoomikApp {
                     self.select_smoke(ctx, "microphone", &select.response);
                 });
                 if let Some(media)=&mut self.media && ui.add_sized([ui.available_width(),30.0],Button::new("Open background studio").fill(ui::SURFACE).corner_radius(10)).clicked() {media.visible=true;}
+                #[cfg(target_os = "linux")]
+                if self.media.is_none() {
+                    ui.label(RichText::new("Window capture · Whole-display capture unavailable").size(11.0).color(ui::MUTED));
+                    if !self.sources.is_empty() && ui.add_sized([ui.available_width(),30.0],Button::new("Open recording studio").fill(ui::SURFACE).corner_radius(10)).clicked() {self.capture_canvas.visible=true;}
+                }
                 ui.add_space(2.0);
                 ui.horizontal(|ui| {
                     if ui
@@ -732,12 +802,12 @@ impl LoomikApp {
                 if self.more_settings {
                     self.advanced_settings(ui);
                 }
-                if self.sources.is_empty() && self.media.is_none() && capture::desktop_supported()
-                    && !self.refresh_pending
+                if (self.sources.is_empty() || cfg!(target_os = "linux")) && self.media.is_none() && capture::desktop_supported()
+                    && !self.refresh_pending && !self.phase.is_active()
                     && ui
                         .add_sized(
                             [ui.available_width(), 36.0],
-                            Button::new("Allow Screen Recording").fill(ui::SURFACE),
+                            Button::new(if cfg!(target_os = "linux") {"Choose window…"} else {"Allow Screen Recording"}).fill(ui::SURFACE),
                         )
                         .clicked()
                 {
@@ -860,7 +930,7 @@ impl LoomikApp {
                         }
                     });
                 self.select_smoke(ui.ctx(), "fps", &select.response);
-                if self.media.is_none() {
+                if self.media.is_none() && !cfg!(target_os = "linux") {
                     ui.checkbox(&mut self.settings.show_cursor, "Show cursor");
                 }
             });
@@ -890,6 +960,12 @@ impl LoomikApp {
         if self.media.is_some() {
             ui.label(
                 RichText::new("Resize the camera in Background studio")
+                    .small()
+                    .color(ui::MUTED),
+            );
+        } else if cfg!(target_os = "linux") {
+            ui.label(
+                RichText::new("Move and resize the camera in Recording studio")
                     .small()
                     .color(ui::MUTED),
             );
@@ -981,7 +1057,7 @@ impl LoomikApp {
     }
 
     fn toolbar(&mut self, ctx: &Context) {
-        let height = if self.collapsed { 190.0 } else { 390.0 };
+        let height = if self.collapsed { 174.0 } else { 354.0 };
         let elapsed = if self.smoke_dir.is_some()
             && !self.hover_smoke()
             && self.launched.elapsed() > Duration::from_secs(6)
@@ -1215,15 +1291,20 @@ impl LoomikApp {
             }
             self.camera_frame_time = Some(frame.captured_at);
         }
-        if self.media.is_some() {
+        if self.media.is_some() || cfg!(target_os = "linux") {
             return;
         }
         let size = self.settings.camera_size;
         let p = *self.placement.lock().unwrap();
+        let camera_position = if cfg!(target_os = "windows") {
+            pos2(52.0, 512.0)
+        } else {
+            pos2(p.x as f32 - 8.0, p.y as f32 - 8.0)
+        };
         ctx.show_viewport_immediate(
             ViewportId::from_hash_of("camera"),
             ui::floating("Loomik camera", vec2(size + 16.0, size + 16.0))
-                .with_position(pos2(p.x as f32 - 8.0, p.y as f32 - 8.0)),
+                .with_position(camera_position),
             |ctx, _| {
                 ctx.send_viewport_cmd(ViewportCommand::InnerSize(vec2(size + 16.0, size + 16.0)));
                 CentralPanel::default().frame(Frame::NONE).show(ctx, |ui| {
@@ -1294,6 +1375,16 @@ impl LoomikApp {
                     p.x = rect.min.x as f64 + 8.0;
                     p.y = rect.min.y as f64 + 8.0;
                     p.diameter = self.settings.camera_size as f64;
+                    #[cfg(target_os = "windows")]
+                    if let Some(native) = crate::platform::windows::camera_bounds(
+                        8.0,
+                        self.settings.camera_size as f64,
+                        ctx.pixels_per_point() as f64,
+                    ) {
+                        p.x = native.x;
+                        p.y = native.y;
+                        p.diameter = native.diameter;
+                    }
                     p.mirror = self.settings.mirror_camera;
                     p.visible = true;
                 }
@@ -1301,6 +1392,71 @@ impl LoomikApp {
                 self.shortcuts(ctx);
             },
         );
+    }
+
+    #[cfg(target_os = "linux")]
+    fn capture_studio(&mut self, ctx: &Context) {
+        if self.media.is_some() {
+            return;
+        }
+        let Some(source) = self.sources.get(self.source) else {
+            return;
+        };
+        let dimensions = RecordingSource::Desktop(source.clone()).dimensions(self.settings.quality);
+        self.capture_canvas.prepare(
+            dimensions,
+            self.camera_id.is_some(),
+            self.settings.mirror_camera,
+        );
+        let frame = self.camera.as_ref().and_then(|c| c.frames.get());
+        let action = self.capture_canvas.show(
+            ctx,
+            &source.name,
+            ui::media_canvas::CanvasState {
+                settings: &self.settings,
+                camera: self.camera_texture.as_ref(),
+                camera_aspect: frame
+                    .as_ref()
+                    .map_or(4.0 / 3.0, |f| f.width as f32 / f.height as f32),
+                camera_enabled: self.camera_id.is_some(),
+                active: self.phase.is_active(),
+                starting: self.phase == Phase::Starting,
+                elapsed: self
+                    .recording
+                    .as_ref()
+                    .map_or(Duration::ZERO, |r| r.elapsed()),
+                background: self.recording.as_ref().and_then(|r| r.background.get()),
+                capture: None,
+            },
+        );
+        match action {
+            Some(ui::media_canvas::CanvasAction::Start) => self.start(),
+            Some(ui::media_canvas::CanvasAction::Stop) => self.stop(),
+            Some(ui::media_canvas::CanvasAction::Pause) => self.toggle_pause(),
+            None => {}
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    fn hide_for_portal(&self, ctx: &Context) -> bool {
+        if !self.portal_picker {
+            return false;
+        }
+        ctx.send_viewport_cmd_to(ViewportId::ROOT, ViewportCommand::Visible(false));
+        for name in [
+            "toolbar",
+            "camera",
+            "media-canvas",
+            "capture-canvas",
+            "countdown",
+        ] {
+            ctx.send_viewport_cmd_to(
+                ViewportId::from_hash_of(name),
+                ViewportCommand::Visible(false),
+            );
+        }
+        ctx.request_repaint_after(Duration::from_millis(50));
+        true
     }
 
     fn shortcuts(&mut self, ctx: &Context) {
@@ -1734,6 +1890,10 @@ impl LoomikApp {
 impl eframe::App for LoomikApp {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         self.poll(ctx);
+        #[cfg(target_os = "linux")]
+        if self.hide_for_portal(ctx) {
+            return;
+        }
         self.verify_native(ctx);
         if self.smoke_dir.is_some() && !self.hover_smoke() {
             self.more_settings = self.launched.elapsed() > Duration::from_secs(4);
@@ -1763,6 +1923,10 @@ impl eframe::App for LoomikApp {
             self.settings_panel(ctx);
             self.confirm(ctx);
         }
+        #[cfg(target_os = "linux")]
+        if self.hide_for_portal(ctx) {
+            return;
+        }
         self.shortcuts(ctx);
         self.smoke_shot = self.smoke_dir.is_some()
             && self.launched.elapsed() > Duration::from_secs(3)
@@ -1770,6 +1934,8 @@ impl eframe::App for LoomikApp {
                 || self.launched.elapsed() < Duration::from_secs(7));
         self.toolbar(ctx);
         self.camera_view(ctx);
+        #[cfg(target_os = "linux")]
+        self.capture_studio(ctx);
         if let Some(media) = &mut self.media {
             let frame = self.camera.as_ref().and_then(|c| c.frames.get());
             media.show(

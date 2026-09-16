@@ -30,7 +30,9 @@ use windows_capture::{
 };
 
 pub fn screen_permission() -> bool {
-    GraphicsCaptureSession::IsSupported().unwrap_or(false)
+    let _apartment = super::time::Apartment::new().ok();
+    crate::platform::windows::supported_version()
+        && GraphicsCaptureSession::IsSupported().unwrap_or(false)
 }
 pub fn request_screen_permission() -> bool {
     screen_permission()
@@ -116,6 +118,22 @@ struct Flags {
     height: u32,
     fps: u32,
     error: Arc<Mutex<Option<String>>>,
+}
+struct NativeItem {
+    kind: SourceKind,
+    id: u64,
+}
+impl TryInto<GraphicsCaptureItemType> for NativeItem {
+    type Error = anyhow::Error;
+    fn try_into(self) -> Result<GraphicsCaptureItemType> {
+        // The library performs this conversion on its initialized WinRT thread.
+        Ok(match self.kind {
+            SourceKind::Display => {
+                Monitor::from_raw_hmonitor(self.id as usize as *mut _).try_into()?
+            }
+            SourceKind::Window => Window::from_raw_hwnd(self.id as usize as *mut _).try_into()?,
+        })
+    }
 }
 struct Handler {
     flags: Flags,
@@ -223,13 +241,9 @@ impl ScreenCapture {
             fps,
             error: error.clone(),
         };
-        let item = match source.kind {
-            SourceKind::Display => GraphicsCaptureItemType::Monitor(Monitor::from_raw_hmonitor(
-                source.id as usize as *mut _,
-            )),
-            SourceKind::Window => {
-                GraphicsCaptureItemType::Window(Window::from_raw_hwnd(source.id as usize as *mut _))
-            }
+        let item = NativeItem {
+            kind: source.kind,
+            id: source.id,
         };
         let settings = Settings::new(
             item,

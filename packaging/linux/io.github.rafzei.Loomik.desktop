@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Loomik
+Comment=Record a window or media background with your camera
+Exec=loomik
+Icon=loomik
+Terminal=false
+Categories=AudioVideo;Recorder;
+StartupNotify=true
+StartupWMClass=io.github.rafzei.Loomik

@@ -1,0 +1,16 @@
+Loomik for Windows 10 version 2004 or later / Windows 11, x64
+
+Extract the entire ZIP, then launch Loomik.exe. Keep ffmpeg.exe, ffprobe.exe and
+the media-tools folder together with it. Rust, Visual Studio and a separate
+FFmpeg installation are not required. The MSVC runtime is statically linked.
+
+This package is unsigned. Windows SmartScreen may show an unknown
+publisher warning. Check that you downloaded it from rafzei/Loomik before opening.
+
+Enable Camera and Microphone access for desktop apps in Windows Privacy settings
+when using those features. Recordings stay in the folder chosen in Loomik settings.
+
+Media-tool licenses, corresponding source archives and the build recipe are in
+media-tools. Loomik itself is MIT licensed. NVENC is available with a compatible
+NVIDIA driver; software H.264 is the fallback. Native Windows capture validation
+is still required; consult https://github.com/rafzei/Loomik for current status.

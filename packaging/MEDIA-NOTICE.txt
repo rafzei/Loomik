@@ -1,0 +1,26 @@
+Loomik media tools
+==================
+
+Loomik invokes the separate FFmpeg and FFprobe executables through command-line
+pipes. These executables statically include x264 and are distributed under the
+GNU General Public License version 2 or later. Loomik's own source is MIT licensed.
+
+FFmpeg: https://ffmpeg.org/ — copyright the FFmpeg developers.
+x264: https://www.videolan.org/developers/x264.html — copyright the x264 developers.
+
+The licenses directory contains the applicable license texts. The sources
+directory contains the complete, unmodified source archives used for this build,
+their SHA-256 hashes and original URLs (media-sources.env), the build recipe
+(build-media-tools.sh), and generated build configuration files. Build-info.txt
+records compiler/version/configuration information. No source modifications are
+made by the recipe. These materials travel with the binary distribution; no
+time-limited Actions artifact or third-party binary download is needed to obtain
+the corresponding source.
+
+To rebuild, use the Loomik repository layout, place the archives under
+target/media-sources/, place the recipe under scripts/ and the source manifest
+under packaging/, then follow docs/media-tools.md. You may modify and rebuild
+these separate executables under their licenses. LOOMIK_FFMPEG and LOOMIK_FFPROBE
+select replacement executables without modifying Loomik.
+
+These tools are provided without warranty; see the included licenses.

@@ -17,8 +17,9 @@ composited into the recording.
 The completed initial implementation supports macOS 13 or later (verified on
 macOS 26 on Apple Silicon). Steps 1–8 below describe that delivered version.
 Shared source interfaces and media-file backgrounds (steps 9–10) are implemented
-and verified on macOS. Native Windows/Linux capture and runtime delivery remain
-in steps 11–13. Windows and
+and verified on macOS. Windows capture code and packaging are implemented, but
+native Windows validation, native Linux validation and runtime delivery remain in steps
+11–13. Windows and
 Linux must each support building from source and running on that operating system;
 cross-compilation from macOS alone does not satisfy this requirement.
 
@@ -154,8 +155,9 @@ account, subscription, or recording time limit is involved.
 - `src/app.rs`, `src/ui/`: egui/eframe multi-viewport native floating windows.
 - `src/model.rs`: settings, recording state, monotonic pause-aware timer.
 - `src/capture/`: target-selected device interface, macOS ScreenCaptureKit and
-  AVFoundation adapters under `macos/`, and an explicit unavailable-device
-  implementation until Windows/Linux native capture is delivered.
+  AVFoundation under `macos/`, Windows WGC/MediaCapture/WASAPI under `windows/`,
+  and portal/PipeWire, XComposite, V4L2 and ALSA under `linux/`. Linux
+  currently exposes window capture and a canvas-relative camera studio.
 - `src/media/`: file probing, oriented image loading, bounded video decoding,
   seek/loop/fit options; preview and canvas-relative placement in
   `src/ui/media_canvas.rs`.
@@ -164,7 +166,7 @@ account, subscription, or recording time limit is involved.
   shared desktop/media frame sources, canvas composition,
   background-audio/microphone mixing, finalization and recovery.
 - `scripts/`: reproducible app packaging and runtime verification helpers,
-  with native Windows and Linux packaging still to be added.
+  including MSVC Windows ZIP and native Ubuntu `.deb` packaging scripts.
 - `src/platform.rs`: platform-specific file reveal.
 - `.github/workflows/`: configured native build/test matrix for all three
   systems; workflow execution and native Windows/Linux validation still pending.
@@ -240,7 +242,16 @@ account, subscription, or recording time limit is involved.
   output. The media recording has no screen-capture stream. Fixed a discovery
   race that could mark the initial device refresh complete before cameras and
   microphones arrived. Full results are in `VERIFICATION.md`.
-- The next implementation milestones are Windows capture/native MSVC build (11),
+- Windows implementation progress (step 11 remains open until native validation):
+  WGC display/window capture, MediaCapture camera, WASAPI microphone, QPC clock
+  mapping, bounded frame/audio transport, SIMD resize, physical-pixel camera
+  coordinates, native cursor dragging, window-exclusion hook/verification,
+  NVENC/QSV/AMF encoder probes with x264 fallback, MSVC packaging script, and
+  Windows CI packaging are implemented. Native Windows build, launch, device,
+  exclusion, mixed-DPI and physical synchronization checks are still required.
+- Moved whole-app quit to X on the floating controls (expanded and collapsed),
+  removed Quit from settings, and kept save/cancel behavior during active takes.
+- The next implementation milestones are Windows native MSVC build/validation (11),
   Linux Wayland/X11/device capture/native build (12), then the runtime and release
   matrix (13). Cross-platform media acceptance remains part of that final matrix.
 
@@ -260,6 +271,44 @@ account, subscription, or recording time limit is involved.
 - Validate exported flash/tone markers and physical clap/flash lip sync on each
   hardware setup. Sub-millisecond physical alignment is not a universal acceptance
   promise; source frame intervals and device timestamp accuracy are real limits.
-- Windows/Linux native capture remains planned. Media backgrounds are implemented
+- Windows capture code is implemented but awaits native verification; Linux
+  capture code and `.deb` packaging are implemented but native verification is
+  deferred. Media backgrounds are implemented
   and measured on macOS; their cross-platform runtime and hardware verification
   remain part of step 13.
+
+
+## Linux implementation and 1.0.0 delivery update
+
+- Implemented Wayland XDG ScreenCast window selection with PipeWire mapped video
+  and acquisition PTS; each consumer opens its own portal remote connection.
+- Implemented XComposite window-pixmap capture on X11. Full-monitor capture is
+  deliberately unavailable because compositor-independent exclusion of Loomik
+  controls cannot be guaranteed. Linux currently omits the cursor.
+- Added V4L2 camera capture, CPAL/ALSA microphone input, explicit clock mapping,
+  bounded buffers, cancellation and device/portal errors. X11 pixmap-read timing
+  is an estimate and requires physical synchronization measurement.
+- Linux Recording studio positions/resizes the camera in output coordinates;
+  its preview consumes the newest native frame independently of the encoder.
+  Wayland global placement/always-on-top behavior remains compositor-dependent.
+- Added Ubuntu `.deb` packaging, desktop launcher/icon, runtime dependencies and
+  native build prerequisites/packaging in GitHub Actions. CI has not run yet.
+- At the user's request, do not start Docker or perform Ubuntu runtime testing
+  during this stage. Step 12 stays open until native Linux build and Wayland/X11
+  hardware/UI checks are completed. Prior musl checks predate the native backend.
+- Release 1.0.0 will be published on GitHub with macOS, Windows and Ubuntu
+  downloads only after verification. Native builds, clean-machine installation,
+  distribution archives/dependencies, signing decisions and release checksums
+  are tracked in `docs/releasing.md`. Keep version 0.1.0 until those gates pass.
+
+## Authorized release scope update
+
+- The user will verify Windows/Ubuntu hardware capture after publication and
+  explicitly authorized push plus GitHub release 1.0.0 after automated checks.
+  This supersedes the earlier requirement to wait for those physical devices.
+- Added source-built, bundled FFmpeg/FFprobe with source archives/licenses,
+  native macOS ZIP/DMG and Windows ZIP verification, static MSVC CRT, Rust notices,
+  package smoke checks and checksums. Version is now 1.0.0 in preparation.
+- Native CI targets Apple Silicon, Intel, Windows MSVC and Ubuntu. Ubuntu also
+  runs an Xvfb test of XComposite isolation and an installed-package GUI smoke.
+  Docker is not used. Release notes retain unverified hardware/compositor limits.

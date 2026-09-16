@@ -1,6 +1,6 @@
 [package]
 name = "loomik"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
 rust-version = "1.88"
 description = "A private, floating screen and media recorder"
@@ -37,10 +37,20 @@ screencapturekit = { version = "10.0.3", features = ["macos_13_0"] }
 windows-capture = "2.0.1"
 cpal = "0.18.2"
 fast_image_resize = "6"
-windows = { version = "0.62.2", features = ["Devices_Enumeration", "Foundation", "Media_Capture", "Media_Capture_Frames", "Media_MediaProperties", "Media_Devices", "Graphics_Imaging", "Win32_Foundation", "Win32_Graphics_Gdi", "Win32_Graphics_Dwm", "Win32_System_Performance", "Win32_System_WinRT", "Win32_UI_WindowsAndMessaging", "Win32_UI_HiDpi"] }
+windows = { version = "0.62.2", features = ["Devices_Enumeration", "Foundation", "Media_Capture", "Media_Capture_Frames", "Media_MediaProperties", "Media_Devices", "Graphics_Imaging", "Win32_Foundation", "Win32_Graphics_Gdi", "Win32_Graphics_Dwm", "Win32_System_Performance", "Win32_System_WinRT", "Win32_UI_WindowsAndMessaging", "Win32_UI_HiDpi", "Wdk_System_SystemServices", "Win32_System_SystemInformation"] }
 
 [dev-dependencies]
 tempfile = "3"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+ashpd = { version = "0.11.1", default-features = false, features = ["async-std"] }
+async-io = "2"
+pipewire = { version = "0.10.1", features = ["v0_3_65"] }
+x11rb = { version = "0.13", features = ["composite"] }
+v4l = "0.14"
+cpal = "0.18.2"
+libc = "0.2"
+fast_image_resize = "6"
 
 [profile.release]
 lto = "thin"

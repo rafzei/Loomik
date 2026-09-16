@@ -66,8 +66,10 @@ normal recording or hardware verification.
 ## Practical limits
 
 - The app targets macOS 13+, with hardware execution verified on macOS 26.1.
-  Native Windows/Linux capture backends are not implemented; shared file-source
-  code passes cross-target checks as detailed below. Mixed-DPI multi-monitor hardware
+  The Windows native backend is implemented but awaits Windows execution;
+  Linux capture code is implemented but its native build/runtime checks are
+  deferred. Cross-target checks below predate the Linux native backend.
+  Mixed-DPI multi-monitor hardware
   was not tested.
 - macOS can display its own direct-screen-capture confirmation in addition to
   Screen Recording permission. That system dialog can appear in captures while
@@ -253,8 +255,8 @@ open -W -n "target/release/bundle/Loomik.app" --args --reset-settings \
 Steps 9–10 are implemented. `RecordingSource` selects native desktop capture or
 a direct image/video reader; `FrameSource` exposes source bounds and frames to
 the existing recording worker. Native adapters now live in `src/capture/macos/`.
-Windows/Linux select an explicit unsupported-device implementation, allowing
-common UI/media code to compile without claiming native capture support.
+At this milestone Windows/Linux selected an explicit unsupported-device backend.
+The Windows implementation added afterward is described in the next section.
 
 Background studio handles PNG/JPEG and FFmpeg-readable MP4/MOV/MKV/WebM inputs,
 Original/16:9/9:16/1:1 canvases, Fit/Fill, EXIF/rotation, transparency, seek,
@@ -335,8 +337,8 @@ Both pass, including compilation of test targets. They do not link or launch a
 native Windows/Linux release. `.github/workflows/portable-builds.yml` defines
 native macOS, Windows MSVC, and Ubuntu jobs with FFmpeg dependencies, formatting,
 Clippy, tests, release builds, and artifacts. **The workflow has not executed.**
-Windows and Linux hardware capture, native builds, and runtime verification
-remain steps 11–13; Wayland and X11 must be checked separately.
+Native Windows build/runtime verification and Linux implementation remain steps
+11–13; Wayland and X11 must be checked separately.
 
 Reproduce the media hardware test with a fresh artifact directory:
 
@@ -350,3 +352,98 @@ python3 scripts/check-native.py artifacts/media-check-new
 
 All hardware recordings, screenshots, and diagnostic reports remain local in
 gitignored `artifacts/`. The README graphic continues to use demo content.
+
+## Quit controls and Windows implementation — 2026-09-16
+
+The expanded and collapsed floating toolbar now both include X, which sends
+Close to the root viewport when idle. The settings footer's Quit button is
+removed; its existing X still hides settings. During countdown, X cancels the
+pending session; during recording/paused state it opens Save & quit; during
+finalization it waits for saving. Failed export retains the recovery session.
+
+Windows implementation is under `src/capture/windows/`:
+
+- Windows Graphics Capture discovers displays/windows, reads native BGRA rows,
+  maps acquisition timestamps, scales with SIMD, and reports source closure or
+  minimization. Native source handles are 64-bit end to end.
+- MediaCapture/MediaFrameReader discovers cameras, selects an available fast
+  mode, requests BGRA, uses realtime frame acquisition, copies locked bitmap
+  rows, and closes every native frame/buffer. A stalled/disconnected camera
+  reports an error instead of indefinitely showing a stale picture.
+- CPAL/WASAPI discovers microphones, reads hardware capture timestamps, mixes
+  channels to mono and passes bounded chunks to the shared audio writer. The
+  next buffer timestamp estimates device drift without accumulating samples in
+  memory. Start/pause/resume/stop use the existing shared recording timeline.
+- WGC SystemRelativeTime, camera SystemRelativeTime and WASAPI QPC values use
+  the same 100 ns clock mapping. A Windows-only unit test checks past/future
+  timestamp offsets; it was compiled here, not executed on Windows.
+- A GUI-thread window-message hook sets `WDA_EXCLUDEFROMCAPTURE` before showing
+  Loomik windows. Each screen frame verifies visible own-process window affinity
+  before publishing pixels. Windows builds older than 19041 are rejected.
+- Camera geometry uses native physical window coordinates and the camera
+  viewport's pixel scale. Dragging reads the physical cursor without a blocking
+  window-manager drag loop. Mixed-DPI behavior remains unverified on hardware.
+- FFmpeg child processes suppress console windows. NVENC, QSV and AMF are tried
+  with real probe frames and low-latency options before selecting libx264.
+- `scripts/bundle-windows.ps1` defines native MSVC build/ZIP packaging and is
+  wired into Windows CI. Setup and acceptance commands are in `docs/windows.md`.
+
+Verified locally: all **29 macOS tests pass**, with the throughput benchmark
+intentionally ignored; macOS Clippy passes. Windows GNU cross-target Clippy
+passes with warnings denied and includes all test targets. Linux musl cross-target
+check also passes, preserving the existing portable/media path. These are checks
+performed on macOS, not Windows/Linux native builds or runtime tests.
+
+The Windows packaging script and CI workflow have **not been executed on Windows**.
+There is no verified Windows binary or hardware performance claim yet. Step 11
+therefore remains open for native MSVC build, launch, permissions, device/exclusion,
+physical synchronization and display/DPI tests. Linux native capture remains
+step 12. The local signed macOS bundle is the runnable artifact from this turn.
+
+Final UI renders in `artifacts/quit-controls-final` were inspected: expanded and
+collapsed controls both show X without clipping, and settings have no Quit
+button. `artifacts/quit-hover-final/hover-geometry.json` records the same toolbar
+rectangle `(24, 160, 78, 354)` in all 667 samples, including hovering X. The smoke
+report has no startup error. Release build and strict code-signature verification
+pass. These fixtures inject egui hover input; they do not automate a native click
+on Quit or claim Windows UI runtime verification.
+
+## Linux backend implementation (native verification deferred)
+
+Added Wayland portal/PipeWire window capture, X11 XComposite isolated-window
+capture, V4L2 camera and CPAL/ALSA microphone adapters. Whole-monitor recording
+and cursor capture are unavailable on Linux. The camera is moved/resized inside
+Recording studio in output coordinates. The studio consumes the latest native
+frame directly, independently of the encoder's timestamp assembly buffer.
+
+PipeWire and V4L2 timestamps map to CLOCK_MONOTONIC; ALSA stream time is calibrated
+periodically against Instant. X11 timing is the midpoint of a synchronous pixmap
+read and is explicitly an estimate. Buffers are bounded; unsupported formats,
+missing timestamps and device/portal errors are reported instead of inventing
+successful capture. These code paths still need native compilation and hardware
+validation before any Linux synchronization/performance claim.
+
+Added native Ubuntu `.deb` packaging with launcher/icon, APT runtime dependencies,
+and ABI dependencies resolved by dpkg-shlibdeps. CI installs PipeWire/SPA, ALSA,
+V4L2/clang headers and packages Ubuntu artifacts. The script's shell syntax was
+checked on macOS; the `.deb` was not built or installed. CI has not been run.
+
+Verification on the macOS host after these changes:
+
+- `cargo test --all-targets --locked`: **31 passed**, one intentional ignored
+  release performance benchmark. This includes actual MP4/MOV/MKV exports,
+  background media, audio/video pause alignment, YUYV color/stride validation and
+  the Linux studio's platform-independent camera coordinate scaling.
+- macOS Clippy with warnings denied passes, including compilation of the shared
+  studio component in tests. This does not compile the Linux native adapters.
+- Windows GNU cross-target Clippy with all test targets and warnings denied
+  passes. This is not a native MSVC build or Windows execution.
+- Rust formatting and shell syntax checks pass.
+
+Per the user's explicit instruction, Docker was not started and Ubuntu runtime
+checks were deferred. **No native Linux build/check, Wayland/X11 capture test,
+Linux device test, or package install was performed.** The previous successful
+Linux musl cross-target check predates these new native dependencies/backend and
+must not be treated as verification of them. Steps 11–13 remain open. The 1.0.0
+release gates and download formats are recorded in `docs/releasing.md`; no tag,
+push, or release publication was performed in this step.

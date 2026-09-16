@@ -159,8 +159,14 @@ fn record(
     output: &std::path::Path,
     background: LatestFrame,
 ) -> Result<()> {
-    let screen = LatestFrame::default();
     let source = &request.source;
+    // Linux studio consumes the newest native frame directly. Its live preview
+    // must not wait for the recorder's timestamp assembly allowance.
+    let screen = if cfg!(target_os = "linux") && source.requires_screen_permission() {
+        background.clone()
+    } else {
+        LatestFrame::default()
+    };
     let settings = &request.settings;
     let (width, height) = source.dimensions(settings.quality);
     let mut encoder = Encoder::start(

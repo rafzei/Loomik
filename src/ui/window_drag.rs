@@ -76,7 +76,15 @@ fn desktop_pointer(ctx: &Context) -> Option<Pos2> {
     Some(pos2(point.x as f32 * scale, point.y as f32 * scale))
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "windows")]
+fn desktop_pointer(ctx: &Context) -> Option<Pos2> {
+    use windows::Win32::{Foundation::POINT, UI::WindowsAndMessaging::GetPhysicalCursorPos};
+    let mut point = POINT::default();
+    unsafe { GetPhysicalCursorPos(&mut point) }.ok()?;
+    Some(pos2(point.x as f32, point.y as f32) / ctx.pixels_per_point())
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 fn desktop_pointer(_ctx: &Context) -> Option<Pos2> {
     None // Other platforms use the window manager's native drag operation.
 }

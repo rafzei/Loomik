@@ -1,4 +1,4 @@
-name: Portable source and media checks
+name: Native builds and verified packages
 on:
   push:
   pull_request:
@@ -10,37 +10,110 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, windows-2022, ubuntu-24.04]
+        include:
+          - os: macos-15
+            platform: macos-arm64
+          - os: macos-15-intel
+            platform: macos-x86_64
+          - os: windows-2022
+            platform: windows-x64
+          - os: ubuntu-24.04
+            platform: ubuntu-amd64
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ${{ matrix.platform }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Windows MSVC environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
       - name: macOS dependencies
         if: runner.os == 'macOS'
-        run: brew install ffmpeg
-      - name: Windows dependencies
+        run: brew install pkg-config nasm
+      - name: Windows media compiler
         if: runner.os == 'Windows'
-        run: choco install ffmpeg --no-progress -y
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            make diffutils tar curl nasm
+            mingw-w64-x86_64-gcc mingw-w64-x86_64-pkgconf
       - name: Linux dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg pkg-config libegl1-mesa-dev libxkbcommon-dev libwayland-dev libx11-dev libxcursor-dev libxi-dev libxrandr-dev libxinerama-dev
+          sudo apt-get install -y ffmpeg pkg-config libegl1-mesa-dev libxkbcommon-dev libwayland-dev libx11-dev libxcursor-dev libxi-dev libxrandr-dev libxinerama-dev libpipewire-0.3-dev libspa-0.2-dev libasound2-dev clang libclang-dev linux-libc-dev dpkg-dev desktop-file-utils xvfb
+      - name: Cache source-built media tools
+        if: runner.os != 'Linux'
+        id: media-cache
+        uses: actions/cache@v4
+        with:
+          path: target/media-tools/${{ matrix.platform }}
+          key: media-${{ matrix.os }}-${{ matrix.platform }}-${{ hashFiles('packaging/media-sources.env', 'packaging/MEDIA-NOTICE.txt', 'scripts/build-media-tools.sh') }}
+      - name: Build macOS media tools
+        if: runner.os == 'macOS' && steps.media-cache.outputs.cache-hit != 'true'
+        run: bash scripts/build-media-tools.sh
+      - name: Build Windows media tools
+        if: runner.os == 'Windows' && steps.media-cache.outputs.cache-hit != 'true'
+        shell: msys2 {0}
+        run: bash scripts/build-media-tools.sh
+      - name: Use bundled media tools for all tests
+        if: runner.os != 'Linux'
+        shell: bash
+        run: |
+          media_bin="$GITHUB_WORKSPACE/target/media-tools/${{ matrix.platform }}/bin"
+          suffix=''; if [ "$RUNNER_OS" = Windows ]; then suffix=.exe; fi
+          echo "$media_bin" >> "$GITHUB_PATH"
+          echo "LOOMIK_FFMPEG=$media_bin/ffmpeg$suffix" >> "$GITHUB_ENV"
+          echo "LOOMIK_FFPROBE=$media_bin/ffprobe$suffix" >> "$GITHUB_ENV"
       - run: cargo fmt --check
       - run: cargo clippy --all-targets --locked -- -D warnings
       - run: cargo test --all-targets --locked
-      - run: cargo build --release --locked
-      - name: Build macOS app
+      - name: Verify isolated X11 window capture
+        if: runner.os == 'Linux'
+        run: xvfb-run -a cargo test --locked --test x11_capture -- --ignored
+      - name: Build release
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = Windows ]; then
+            cargo build --release --locked --target x86_64-pc-windows-msvc
+          else
+            cargo build --release --locked
+          fi
+      - name: Package Windows MSVC release
+        if: runner.os == 'Windows'
+        run: ./scripts/bundle-windows.ps1 -SkipBuild
+      - name: Package and verify macOS ZIP/DMG
         if: runner.os == 'macOS'
-        run: bash scripts/bundle.sh
+        run: python scripts/package-desktop.py --skip-build
+      - name: Package Ubuntu desktop application
+        if: runner.os == 'Linux'
+        run: |
+          desktop-file-validate packaging/linux/io.github.rafzei.Loomik.desktop
+          bash scripts/bundle-linux.sh --skip-build
+          sudo apt-get install -y ./target/release/bundle/Loomik-*-Ubuntu-24.04-amd64.deb
+          mkdir -p artifacts
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 45s xvfb-run -a loomik --ui-smoke "$PWD/artifacts/ubuntu-package-ui" --reset-settings
+          python -c 'import json; r=json.load(open("artifacts/ubuntu-package-ui/ui-smoke.json")); assert r["ffmpeg_ready"] and not r["error"], r'
       # These are build artifacts, not a claim of native capture feature parity.
       - uses: actions/upload-artifact@v4
         with:
-          name: loomik-${{ runner.os }}-build
+          name: loomik-${{ matrix.platform }}-build
           path: |
-            target/release/loomik
-            target/release/loomik.exe
-            target/release/bundle/Loomik.app
+            target/release/bundle/Loomik-*.zip
+            target/release/bundle/Loomik-*.dmg
+            target/release/bundle/Loomik-*.sha256
+            target/release/bundle/Loomik-*.json
+            target/release/bundle/Loomik-*.deb
           if-no-files-found: error

@@ -2,6 +2,8 @@ mod select;
 pub use select::{Select, select_hint, select_option};
 mod window_drag;
 pub use window_drag::window_drag;
+#[cfg(any(target_os = "linux", test))]
+pub mod capture_canvas;
 pub mod hover_check;
 pub mod media_canvas;
 
@@ -61,14 +63,17 @@ pub fn configure(ctx: &Context) {
 }
 
 pub fn floating(title: &str, size: Vec2) -> ViewportBuilder {
-    ViewportBuilder::default()
+    let builder = ViewportBuilder::default()
         .with_title(title)
         .with_inner_size(size)
         .with_decorations(false)
         .with_transparent(true)
         .with_resizable(false)
         .with_always_on_top()
-        .with_has_shadow(false)
+        .with_has_shadow(false);
+    #[cfg(target_os = "linux")]
+    let builder = builder.with_app_id("io.github.rafzei.Loomik");
+    builder
 }
 
 pub fn panel_frame(dark: bool) -> Frame {

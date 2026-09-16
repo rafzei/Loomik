@@ -55,16 +55,31 @@ The graphic above is a product illustration using demo content.
 | Platform | Current status |
 | --- | --- |
 | macOS 13+ | Implemented; native capture and release builds verified on macOS 26.1 / Apple Silicon |
-| Windows | Shared app and file-source code passes a cross-target check; native build/runtime and screen/camera/microphone capture still pending |
-| Linux | Shared app and file-source code passes a cross-target check; native build/runtime and Wayland/X11/device capture still pending |
+| Windows 10 2004+ / 11 | WGC screen/window, MediaCapture camera and WASAPI microphone backend implemented; cross-target checked, native build/runtime verification pending |
+| Ubuntu 24.04 x86_64 | Wayland portal/PipeWire, isolated X11 windows, V4L2 camera, ALSA microphone and `.deb` packaging implemented; native build/runtime verification pending |
 
 The verified release runs on **macOS**, including image/video backgrounds.
-Windows/Linux use an explicit unavailable-device backend until their native
-capture implementations are delivered. A native CI build matrix is configured,
+Windows has a target-specific native backend and a [build/verification guide](docs/windows.md).
+Linux has a [build and capability guide](docs/linux.md); its initial safe mode captures
+an individual window, with the camera positioned inside Recording studio.
+Whole-monitor and cursor capture are unavailable on Linux. A native CI build matrix is configured,
 but has not been run. Cross-target checks from macOS are not native OS tests.
 See the [implementation plan](loomik-plan.md). System/desktop audio is not captured.
 
-## Quick start
+## Downloads
+
+Download the package for your system from [GitHub Releases](https://github.com/rafzei/Loomik/releases).
+macOS ZIP/DMG files are provided for Apple Silicon (`arm64`) and Intel (`x86_64`).
+Windows uses an x64 ZIP; Ubuntu 24.04 uses an amd64 `.deb`. macOS and Windows
+packages include FFmpeg/FFprobe. Ubuntu installs its dependencies through APT.
+Developer tools are only needed when building from source.
+
+macOS builds are ad-hoc signed, not notarized; Windows builds are unsigned.
+Hardware capture on macOS has been verified. Windows and Ubuntu camera,
+microphone and compositor checks will be performed after release; see
+[Windows](docs/windows.md), [Ubuntu](docs/linux.md) and [verification](VERIFICATION.md).
+
+## Build from source on macOS
 
 Requires **macOS 13 or later**, Rust 1.88+, Xcode Command Line Tools (including
 Swift, used by the ScreenCaptureKit bindings), and FFmpeg with `libx264`.
@@ -113,7 +128,10 @@ found beside FFmpeg, on `PATH`, or via `LOOMIK_FFPROBE`.
    their normal interactions.
 6. **Stop** finalizes the movie, then **Show in Finder** reveals it. Start over and
    Discard ask before removing the current take. Quitting during recording offers
-   to save first.
+   to save first. **X at the bottom of the floating controls closes the whole
+   application**, including when controls are collapsed. The X in settings hides
+   only that panel. During the countdown, quitting cancels the pending take;
+   during finalization, it waits for saving to finish.
 
 The toolbar and settings are excluded through ScreenCaptureKit's application
 filter. The camera window is excluded too; its circular camera pixels are
@@ -288,21 +306,32 @@ Background studio. For a hardware check, `--media-loop` also enables looping;
 the verifier includes source audio when available. Choose a fresh artifact
 directory for each hardware run. A normal launch also accepts `--media PATH`.
 
-The native adapters are isolated under `src/capture/macos/`. Windows/Linux
-capture remains pending; `.github/workflows/portable-builds.yml` defines native
-CI checks and build artifacts, but has not executed yet. Experimental builds
-use `cargo build --release --locked` with Rust and FFmpeg/FFprobe installed.
-Windows uses the MSVC toolchain and Visual Studio C++ Build Tools; Ubuntu needs
-the X11/Wayland/EGL development packages listed in that workflow. These build
+Native adapters are isolated under `src/capture/macos/`, `src/capture/windows/`
+and `src/capture/linux/`.
+Windows uses WGC, MediaCapture and WASAPI with QPC timestamp alignment and checks
+control-window exclusion before publishing screen frames. Native Windows capture
+has not yet been tested on Windows. Linux uses portal/PipeWire on Wayland,
+XComposite on X11, V4L2 cameras and CPAL/ALSA microphones; its native build and
+runtime validation are deferred. Older Linux cross-target checks predate this backend.
+`.github/workflows/portable-builds.yml` defines native CI checks and build artifacts,
+but has not executed yet. Experimental builds use Rust and FFmpeg/FFprobe.
+Windows uses the MSVC toolchain, Visual Studio C++ Build Tools, and
+[`scripts/bundle-windows.ps1`](scripts/bundle-windows.ps1); Ubuntu uses
+[`scripts/bundle-linux.sh`](scripts/bundle-linux.sh) with the native dependencies
+listed in [its guide](docs/linux.md). These build
 instructions are not a claim of verified Windows/Linux runtime support.
 The app has no cloud services, updater, or external network requests at runtime.
+
+Version **1.0.0** packages are built and checked by GitHub Actions on each OS.
+The [release checklist](docs/releasing.md) records automated checks and the
+Windows/Ubuntu hardware validation scheduled after publication.
 
 ## Project structure
 
 | Path | Responsibility |
 | --- | --- |
 | [`src/app.rs`](src/app.rs), [`src/ui/`](src/ui/) | Floating settings, recording toolbar, device selectors, and camera preview |
-| [`src/capture/`](src/capture/) | Target-selected device interface; macOS ScreenCaptureKit, AVFoundation, permissions, and clocks |
+| [`src/capture/`](src/capture/) | macOS ScreenCaptureKit/AVFoundation and Windows WGC/MediaCapture/WASAPI, permissions and clocks |
 | [`src/media/`](src/media/) | File metadata, oriented images, bounded video decoding, and canvas options |
 | [`src/recording/`](src/recording/) | Shared frame sources, camera composition, audio alignment/mixing, encoding, and export |
 | [`src/platform.rs`](src/platform.rs) | Finder/Explorer/Linux file reveal |
@@ -315,6 +344,7 @@ The app has no cloud services, updater, or external network requests at runtime.
 - [x] Load an image or video as the recording background, then record camera and
   narration over it without capturing the desktop.
 - [x] Add source-video playback, looping, fit/fill controls, and optional audio mixing.
+- [x] Implement the Windows capture backend and MSVC packaging script.
 - [ ] Build and run natively on Windows, with native screen/camera/audio capture.
 - [ ] Build and run natively on Linux, with separate Wayland and X11 capture paths.
 - [x] Configure a native macOS/Windows/Linux build/test matrix.
@@ -331,5 +361,7 @@ is not required. Run the development checks above before submitting code changes
 
 ## License
 
-Loomik is distributed under the [MIT License](LICENSE). FFmpeg is a separate
-runtime dependency with its own license and build configuration.
+Loomik is distributed under the [MIT License](LICENSE). Bundled FFmpeg/x264
+executables are GPL-2.0-or-later and include their licenses, source archives and
+[build recipe](docs/media-tools.md). Rust dependency notices are included in the
+distribution. Ubuntu uses its distribution FFmpeg package.

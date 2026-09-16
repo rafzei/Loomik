@@ -92,7 +92,7 @@ impl Camera {
                         let fps =
                             rate.Numerator().ok()? as f64 / rate.Denominator().ok()?.max(1) as f64;
                         let (w, h) = (v.Width().ok()?, v.Height().ok()?);
-                        (w <= 1280 && h <= 960 && fps <= 60.1 && fps >= 15.0).then_some((
+                        (w <= 1280 && h <= 960 && (15.0..=60.1).contains(&fps)).then_some((
                             fps,
                             w as u64 * h as u64,
                             f,

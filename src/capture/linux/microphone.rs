@@ -1,4 +1,4 @@
-use super::time::HostClock;
+use super::time::AudioClock;
 use crate::{
     model::{Device, RecordingClock},
     recording::audio::{AudioChunk, AudioWriter},
@@ -15,7 +15,7 @@ use std::{
     path::Path,
     sync::{Arc, Mutex},
     thread::JoinHandle,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 pub fn discover_microphones() -> Result<Vec<Device>> {
@@ -33,6 +33,8 @@ pub struct Microphone {
     stream: Option<cpal::Stream>,
     writer: Option<JoinHandle<Result<serde_json::Value>>>,
     error: Arc<Mutex<Option<String>>>,
+    anchor: Arc<Mutex<Option<AudioClock>>>,
+    calibrated: Instant,
 }
 impl Microphone {
     pub fn start(id: &str, path: &Path, clock: Arc<Mutex<RecordingClock>>) -> Result<Self> {
@@ -43,14 +45,24 @@ impl Microphone {
         let config = device.default_input_config()?;
         let (tx, rx) = bounded::<AudioChunk>(32);
         let error = Arc::new(Mutex::new(None));
-        let host_clock = HostClock::new()?;
-        let stream=match config.sample_format() {
-            SampleFormat::F32=>build::<f32>(&device,config.config(),host_clock,tx,error.clone()),
-            SampleFormat::I16=>build::<i16>(&device,config.config(),host_clock,tx,error.clone()),
-            SampleFormat::I32=>build::<i32>(&device,config.config(),host_clock,tx,error.clone()),
-            SampleFormat::U16=>build::<u16>(&device,config.config(),host_clock,tx,error.clone()),
-            format=>anyhow::bail!("Unsupported microphone sample format: {format}"),
-        }.context("Cannot open microphone. Enable Microphone access for desktop apps in Windows Privacy settings")?;
+        let anchor = Arc::new(Mutex::new(None));
+        let stream = match config.sample_format() {
+            SampleFormat::F32 => {
+                build::<f32>(&device, config.config(), anchor.clone(), tx, error.clone())
+            }
+            SampleFormat::I16 => {
+                build::<i16>(&device, config.config(), anchor.clone(), tx, error.clone())
+            }
+            SampleFormat::I32 => {
+                build::<i32>(&device, config.config(), anchor.clone(), tx, error.clone())
+            }
+            SampleFormat::U16 => {
+                build::<u16>(&device, config.config(), anchor.clone(), tx, error.clone())
+            }
+            format => anyhow::bail!("Unsupported microphone sample format: {format}"),
+        }
+        .context("Cannot open microphone. Check Linux sound settings and device access")?;
+        *anchor.lock().unwrap() = Some(AudioClock::sample(&stream));
         let file = File::create(path.join("microphone.f32"))?;
         let writer_error = error.clone();
         let writer = std::thread::spawn(move || {
@@ -87,6 +99,8 @@ impl Microphone {
             stream: Some(stream),
             writer: Some(writer),
             error,
+            anchor,
+            calibrated: Instant::now(),
         };
         if let Err(e) = microphone.stream.as_ref().unwrap().play() {
             let _ = microphone.stop();
@@ -95,6 +109,12 @@ impl Microphone {
         Ok(microphone)
     }
     pub fn check(&mut self) -> Result<()> {
+        if self.calibrated.elapsed() >= Duration::from_millis(250) {
+            if let Some(stream) = &self.stream {
+                *self.anchor.lock().unwrap() = Some(AudioClock::sample(stream));
+            }
+            self.calibrated = Instant::now();
+        }
         if let Some(e) = self.error.lock().unwrap().as_ref() {
             anyhow::bail!("{e}");
         }
@@ -104,7 +124,7 @@ impl Microphone {
         48_000
     }
     pub fn stop(&mut self) -> Result<serde_json::Value> {
-        self.stream.take(); // Stop WASAPI, releasing callback senders before draining.
+        self.stream.take(); // Stop ALSA, releasing callback senders before draining.
         let report = if let Some(writer) = self.writer.take() {
             writer
                 .join()
@@ -124,7 +144,7 @@ impl Drop for Microphone {
 fn build<T>(
     device: &cpal::Device,
     config: cpal::StreamConfig,
-    clock: HostClock,
+    clock: Arc<Mutex<Option<AudioClock>>>,
     tx: Sender<AudioChunk>,
     error: Arc<Mutex<Option<String>>>,
 ) -> Result<cpal::Stream>
@@ -140,8 +160,8 @@ where
         config,
         move |samples, info| {
             let result = (|| -> Result<()> {
-                let pts = i64::try_from(info.timestamp().capture.as_nanos() / 100)?;
-                let start = clock.instant(pts)?;
+                let anchor = (*clock.lock().unwrap()).context("Microphone clock is not ready")?;
+                let start = anchor.instant(info.timestamp().capture)?;
                 let samples = samples
                     .chunks_exact(channels)
                     .map(|frame| {

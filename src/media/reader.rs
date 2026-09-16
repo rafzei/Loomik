@@ -1,5 +1,8 @@
 use super::*;
-use crate::recording::{encoder::ffmpeg_path, frame::VideoFrame};
+use crate::recording::{
+    encoder::{ffmpeg_path, media_command},
+    frame::VideoFrame,
+};
 use crossbeam_channel::{Receiver, bounded};
 use std::{
     io::Read,
@@ -98,7 +101,7 @@ impl Decoder {
                 ",tpad=stop_mode=clone:stop=-1"
             }
         );
-        let mut command = Command::new(ffmpeg_path()?);
+        let mut command = media_command(ffmpeg_path()?);
         command.args([
             "-hide_banner",
             "-loglevel",
