@@ -24,7 +24,7 @@ def collect(destination):
     destination.mkdir(parents=True, exist_ok=True)
     index = ["# Loomik Rust dependency notices", "", f"Native target: `{host}`", "",
              "This includes runtime, build and test dependencies resolved by Cargo.", ""]
-    patterns = ("license*", "licence*", "copying*", "copyright*", "notice*", "unlicense*")
+    patterns = ("license*", "licence*", "copying*", "copyright*", "notice*", "unlicense*", "ofl*")
     from fnmatch import fnmatch
     for package in sorted(metadata["packages"], key=lambda p: (p["name"], p["version"])):
         if package["id"] not in included or package["id"] == metadata["resolve"]["root"]:
@@ -33,10 +33,12 @@ def collect(destination):
         folder = destination / f"{package['name']}-{package['version']}"
         folder.mkdir()
         files = [path for path in root.rglob("*") if path.is_file() and
-                 any(fnmatch(path.name.lower(), pattern) for pattern in patterns)]
+                 any(fnmatch(part.lower(), pattern) for part in path.relative_to(root).parts for pattern in patterns)]
         if package.get("license_file"):
             files.append(root / package["license_file"])
         for file in sorted(set(files)):
+            if not file.resolve().is_relative_to(root.resolve()):
+                raise RuntimeError(f"License path outside {package['name']}: {file}")
             relative = file.relative_to(root)
             target = folder / relative
             target.parent.mkdir(parents=True, exist_ok=True)

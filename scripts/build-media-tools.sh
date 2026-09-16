@@ -74,8 +74,8 @@ export MACOSX_DEPLOYMENT_TARGET=13.0
     --disable-network --disable-doc --disable-debug --disable-ffplay \
     --extra-cflags="$cflags" --extra-ldflags="$ldflags" --pkg-config-flags=--static \
     "${ff_options[@]}"
-  make -j "$jobs" ffmpeg ffprobe
   suffix=''; [[ "$platform" != windows-x64 ]] || suffix=.exe
+  make -j "$jobs" "ffmpeg$suffix" "ffprobe$suffix"
   cp "ffmpeg$suffix" "ffprobe$suffix" "$output/bin/"
   cp config.h config_components.h ffbuild/config.mak "$output/sources/"
   cp COPYING.GPLv2 COPYING.LGPLv2.1 LICENSE.md "$output/licenses/"
