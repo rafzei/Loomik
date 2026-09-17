@@ -73,6 +73,29 @@ class DependencyChecks(unittest.TestCase):
             package.verify_binary(Path("loomik.exe"), "x64")
 
 
+class InstallChecks(unittest.TestCase):
+    @patch.object(package.sys, "platform", "win32")
+    def test_windows_install_uses_uppercase_system_root_and_only_system_tools(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / "verification"
+            output.mkdir()
+            (output / "package-check.json").write_text('{"status": "passed"}')
+            windows = root / "Windows"
+            environment = {"SYSTEMROOT": str(windows), "PATH": "developer tools",
+                           "LOOMIK_FFMPEG": "external ffmpeg", "LOOMIK_FFPROBE": "external ffprobe"}
+            with patch.dict(package.os.environ, environment, clear=True), \
+                    patch.object(package, "run") as run:
+                result = package.verify_install(root / "Loomik.exe", output)
+            self.assertEqual(result["status"], "passed")
+            run.assert_called_once()
+            env = run.call_args.kwargs["env"]
+            self.assertEqual(env["PATH"], os.pathsep.join([str(windows / "System32"), str(windows)]))
+            self.assertNotIn("LOOMIK_FFMPEG", env)
+            self.assertNotIn("LOOMIK_FFPROBE", env)
+            self.assertEqual(run.call_args.args, (root / "Loomik.exe", "--verify-package", output))
+
+
 class ArchiveChecks(unittest.TestCase):
     def test_epoch_dated_licenses_survive_windows_packaging(self):
         with tempfile.TemporaryDirectory(prefix="loomik archive test ") as directory:

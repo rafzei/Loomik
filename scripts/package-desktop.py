@@ -84,7 +84,9 @@ def verify_install(executable, output):
     if sys.platform == "darwin":
         env["PATH"] = "/usr/bin:/bin"
     else:
-        windows = Path(env["SystemRoot"])
+        # os.environ normalizes Windows keys to uppercase; copy() is an ordinary
+        # case-sensitive dict, unlike the original Windows environment mapping.
+        windows = Path(env["SYSTEMROOT"])
         env["PATH"] = os.pathsep.join([str(windows / "System32"), str(windows)])
     run(executable, "--verify-package", output, env=env, cwd=output.parent)
     result = json.loads((output / "package-check.json").read_text())
