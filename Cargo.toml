@@ -46,7 +46,7 @@ tempfile = "3"
 ashpd = { version = "0.11.1", default-features = false, features = ["async-std"] }
 async-io = "2"
 pipewire = { version = "0.10.1", features = ["v0_3_65"] }
-x11rb = { version = "0.13", features = ["composite"] }
+x11rb = { version = "0.14", features = ["composite"] }
 v4l = "0.14"
 cpal = "0.18.2"
 libc = "0.2"
