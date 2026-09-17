@@ -206,6 +206,9 @@ fn media_worker_records_without_desktop_capture_and_preserves_pause() {
     recording.command(recording::Command::Resume);
     std::thread::sleep(Duration::from_millis(350));
     recording.command(recording::Command::Stop);
+    // sleep() is only a minimum delay: busy CI runners can oversleep. Compare
+    // decoded frames with the actual active timeline, which excludes the pause.
+    let active_duration = recording.elapsed();
     let deadline = Instant::now() + Duration::from_secs(15);
     let movie = loop {
         assert!(Instant::now() < deadline);
@@ -227,7 +230,11 @@ fn media_worker_records_without_desktop_capture_and_preserves_pause() {
         .unwrap();
     assert!(data.status.success());
     let count = data.stdout.len() / (96 * 64 * 3);
-    assert!((20..=25).contains(&count), "{count}");
+    let decoded_duration = count as f64 / 30.0;
+    assert!(
+        (decoded_duration - active_duration.as_secs_f64()).abs() <= 1.0 / 30.0,
+        "{count} frames for {active_duration:?} of active recording"
+    );
     for p in data.stdout.as_chunks::<3>().0 {
         assert!(p[1] > 130 && p[0] < 50 && p[2] < 90);
     }

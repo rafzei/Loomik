@@ -95,14 +95,14 @@ jobs:
       - name: Verify isolated X11 window capture
         if: runner.os == 'Linux'
         run: xvfb-run -a cargo test --locked --test x11_capture -- --ignored
+      - name: Build Windows MSVC release
+        if: runner.os == 'Windows'
+        # Git Bash puts its coreutils link.exe ahead of the MSVC linker.
+        shell: pwsh
+        run: cargo build --release --locked --target x86_64-pc-windows-msvc
       - name: Build release
-        shell: bash
-        run: |
-          if [ "$RUNNER_OS" = Windows ]; then
-            cargo build --release --locked --target x86_64-pc-windows-msvc
-          else
-            cargo build --release --locked
-          fi
+        if: runner.os != 'Windows'
+        run: cargo build --release --locked
       - name: Package Windows MSVC release
         if: runner.os == 'Windows'
         run: ./scripts/bundle-windows.ps1 -SkipBuild
