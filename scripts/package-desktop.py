@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Create and verify standalone macOS/Windows distribution archives."""
 import argparse
+import ctypes
 import hashlib
 import json
 import os
@@ -35,9 +36,17 @@ def verify_binary(path, arch):
         lines = subprocess.check_output(["otool", "-L", str(path)], text=True).splitlines()[1:]
         for line in lines:
             library = line.strip().split(" (", 1)[0]
-            if library == "@rpath/libswift_Concurrency.dylib":
+            if library.startswith("@rpath/libswift") and library.endswith(".dylib"):
                 load = subprocess.check_output(["otool", "-l", str(path)], text=True)
-                if "path /usr/lib/swift " in load:
+                name = library.removeprefix("@rpath/")
+                if "/" not in name and "path /usr/lib/swift " in load:
+                    # Intel links some Swift overlays via @rpath; ARM may use
+                    # their absolute system paths. Check the OS runtime itself,
+                    # including dylibs stored only in the dyld shared cache.
+                    try:
+                        ctypes.CDLL("/usr/lib/swift/" + name)
+                    except OSError as error:
+                        raise RuntimeError(f"Missing system Swift runtime: {name}") from error
                     continue
             if not library.startswith(("/usr/lib/", "/System/Library/")):
                 raise RuntimeError(f"Non-system dependency in {path.name}: {library}")
@@ -51,13 +60,17 @@ def verify_binary(path, arch):
                   "dwmapi.dll", "dxgi.dll", "d3d11.dll", "d3d12.dll", "d3dcompiler_47.dll",
                   "opengl32.dll", "propsys.dll", "cfgmgr32.dll", "powrprof.dll", "avrt.dll",
                   "runtimeobject.dll", "combase.dll", "windowsapp.dll", "winspool.drv",
-                  "mf.dll", "mfplat.dll", "mfreadwrite.dll", "mfuuid.dll", "strmiids.dll"}
-        for line in text.splitlines():
-            library = line.strip().lower()
-            if library.endswith((".dll", ".drv")) and not (
-                library in system or library.startswith(("api-ms-win-", "ext-ms-win-"))
-            ):
-                raise RuntimeError(f"Unbundled/unknown Windows dependency in {path.name}: {library}")
+                  "mf.dll", "mfplat.dll", "mfreadwrite.dll", "mfuuid.dll", "strmiids.dll",
+                  # Video for Windows imports used by source-built FFmpeg.
+                  "avicap32.dll", "msvfw32.dll"}
+        libraries = sorted({line.strip().lower() for line in text.splitlines()
+                            if line.strip().lower().endswith((".dll", ".drv"))})
+        print(f"{path.name} dependencies: {', '.join(libraries)}")
+        unknown = [library for library in libraries if not (
+            library in system or library.startswith(("api-ms-win-", "ext-ms-win-"))
+        )]
+        if unknown:
+            raise RuntimeError(f"Unbundled/unknown Windows dependencies in {path.name}: {', '.join(unknown)}")
 
 
 def verify_install(executable, output):

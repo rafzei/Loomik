@@ -23,10 +23,10 @@
 Loomik helps you record a walkthrough, explain an idea, or demonstrate a bug
 without setting up a full video studio. Choose a display, application window,
 image, or video, add a camera and microphone if you need them, and save a movie on
-your Mac. Compact controls float above your work and stay out of the recording.
+your computer. Compact controls float above your work and stay out of the recording.
 
-The project is written in **Rust**, with an **egui** interface, native macOS capture
-APIs, and **FFmpeg** encoding. It has no account system, cloud storage, or uploads.
+The project is written in **Rust**, with an **egui** interface, native capture
+backends, and **FFmpeg** encoding. It has no account system, cloud storage, or uploads.
 The graphic above is a product illustration using demo content.
 
 ## What you can do
@@ -54,16 +54,17 @@ The graphic above is a product illustration using demo content.
 
 | Platform | Current status |
 | --- | --- |
-| macOS 13+ | Implemented; native capture and release builds verified on macOS 26.1 / Apple Silicon |
-| Windows 10 2004+ / 11 | WGC screen/window, MediaCapture camera and WASAPI microphone backend implemented; cross-target checked, native build/runtime verification pending |
-| Ubuntu 24.04 x86_64 | Wayland portal/PipeWire, isolated X11 windows, V4L2 camera, ALSA microphone and `.deb` packaging implemented; native build/runtime verification pending |
+| macOS 13+ | Native CI for Apple Silicon and Intel; hardware capture verified on macOS 26.1 / Apple Silicon |
+| Windows 10 2004+ / 11 | Native MSVC CI and standalone package checks; WGC, camera and microphone hardware validation pending |
+| Ubuntu 24.04 x86_64 | Native CI, `.deb` installation, GUI smoke and isolated X11 capture checks; Wayland and device hardware validation pending |
 
-The verified release runs on **macOS**, including image/video backgrounds.
-Windows has a target-specific native backend and a [build/verification guide](docs/windows.md).
+Hardware recording has been verified on **macOS**, including image/video backgrounds.
+Windows has a native backend and a [build/verification guide](docs/windows.md).
 Linux has a [build and capability guide](docs/linux.md); its initial safe mode captures
 an individual window, with the camera positioned inside Recording studio.
-Whole-monitor and cursor capture are unavailable on Linux. A native CI build matrix is configured,
-but has not been run. Cross-target checks from macOS are not native OS tests.
+Whole-monitor and cursor capture are unavailable on Linux. Build, media and package
+checks run on native GitHub Actions runners; their scope is recorded in
+[VERIFICATION.md](VERIFICATION.md). They do not replace physical device tests.
 See the [implementation plan](loomik-plan.md). System/desktop audio is not captured.
 
 ## Downloads
@@ -81,9 +82,11 @@ microphone and compositor checks will be performed after release; see
 
 ## Build from source on macOS
 
-Requires **macOS 13 or later**, Rust 1.88+, Xcode Command Line Tools (including
-Swift, used by the ScreenCaptureKit bindings), and FFmpeg with `libx264`.
-Install the command-line tools with `xcode-select --install` if needed. Then:
+Requires **macOS 13 or later**, Rust 1.88+, a current full Xcode installation
+(CI uses Xcode 26.3), and FFmpeg with `libx264`. The ScreenCaptureKit bindings
+compile a Swift/Metal bridge that needs the current SDK; older Command Line
+Tools alone may fail with missing Metal API members. Select the installed Xcode
+with `sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer`. Then:
 
 ```sh
 git clone https://github.com/rafzei/Loomik.git

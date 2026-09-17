@@ -1,9 +1,11 @@
 # Loomik on Windows
 
-The Windows backend is implemented and checked by cross-target compilation from
-macOS. **A native Windows build, launch, capture test, and performance measurement
-have not yet been performed.** This is a development build path, not a verified
-Windows release. Linux native capture remains a separate plan milestone.
+Native Windows MSVC builds, automated media tests and standalone package checks
+run in GitHub Actions. Package verification launches the extracted executable
+and exports/decodes synthetic video and audio with only system directories on
+PATH. **Physical screen/camera/microphone capture, GUI behavior, mixed-DPI and
+performance measurements remain unverified on Windows.** See
+[VERIFICATION.md](../VERIFICATION.md) for the CI evidence and its scope.
 
 ## Build on Windows
 
@@ -18,6 +20,9 @@ cargo test --all-targets --locked
 cargo clippy --all-targets --locked -- -D warnings
 cargo build --release --locked --target x86_64-pc-windows-msvc
 ```
+
+Run Cargo from an x64 Visual Studio developer PowerShell. Git Bash can put its
+unrelated `link.exe` utility ahead of the MSVC linker and fail during linking.
 
 Release packaging uses [source-built media tools](media-tools.md) and
 `scripts/bundle-windows.ps1` from an x64 Visual Studio developer shell. It creates

@@ -1,5 +1,9 @@
 # Verification record
 
+This is a chronological record. For the exact native CI run and packages of a
+published version, follow its [release notes](https://github.com/rafzei/Loomik/releases).
+The native CI/package gates added on 2026-09-17 are described at the end.
+
 Verified on 2026-09-16 on macOS 26.1, Apple Silicon.
 
 The initial hardware captures below were made before the rename from Local
@@ -447,3 +451,50 @@ Linux musl cross-target check predates these new native dependencies/backend and
 must not be treated as verification of them. Steps 11–13 remain open. The 1.0.0
 release gates and download formats are recorded in `docs/releasing.md`; no tag,
 push, or release publication was performed in this step.
+
+## Native CI and package gates — 2026-09-17
+
+The release workflow now runs on macOS 15 ARM64, macOS 15 Intel, Windows Server
+2022 with MSVC, and Ubuntu 24.04 amd64. It enforces formatting, Clippy with
+warnings denied, all applicable Rust test targets and packaging dependency
+regressions. macOS/Windows tests use the source-built media tools distributed
+with the application. The release throughput benchmark remains intentionally
+ignored in ordinary test runs.
+
+The recording/pause integration test compares decoded duration with the actual
+active recording clock, within one frame. This avoids assuming that two 350 ms
+sleeps always finish on time on a shared runner. It still checks that the clock
+does not advance during a pause and that every decoded pixel matches the source.
+Windows release builds use developer PowerShell so the linker is MSVC's
+`link.exe`, rather than Git Bash's unrelated file-link utility.
+
+Package gates:
+
+- macOS and Windows inspect binary dependencies and reject developer-machine
+  libraries or unbundled compiler runtimes. Intel Swift overlays are accepted
+  through `/usr/lib/swift` only when the executable has that runpath and the
+  system runtime can actually load the library. Windows' Video for Windows DLLs
+  are recognized as OS components. Regression tests retain rejection of Homebrew,
+  missing Swift runtimes, Visual C++ redistributable and MinGW runtime dependencies.
+- ZIPs are extracted into a path containing spaces. The packaged executable runs
+  with only system directories on PATH and no media-tool overrides, locates its
+  bundled FFmpeg/FFprobe, and exports and fully decodes H.264/AAC in MP4, MOV and
+  MKV. Checks cover frame count, first/last pixels, duration and nonzero audio.
+- macOS architecture and strict code signatures are checked before/after ZIP
+  extraction; disk images pass `hdiutil verify`. JSON reports record package
+  verification and SHA-256 values for each ZIP/DMG.
+- Ubuntu runs the isolated XComposite test under Xvfb, including occluding
+  controls and source closure; builds and installs the `.deb`; then launches its
+  installed application under Xvfb and checks FFmpeg readiness and startup errors.
+- Publication requires a green matrix for the exact tagged commit and matching
+  checksums of downloaded Actions packages. Those archives and a combined
+  `SHA256SUMS` are attached to the release; they are not rebuilt for publication.
+
+Local validation of the recording-test fix on macOS 26.1 ARM64, Rust 1.98.1 and
+the bundled FFmpeg 8.0.1: **31 Rust tests passed**, one intentional ignored
+throughput benchmark. Python dependency-gate regression tests also pass.
+
+These gates do not establish physical Windows/Ubuntu camera/microphone behavior,
+Wayland portal behavior, mixed-DPI handling or hardware latency. Those checks
+remain deferred to after release, as authorized in `docs/releasing.md`. The
+macOS hardware observations above retain their original scope and dates.

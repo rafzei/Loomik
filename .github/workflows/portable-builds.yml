@@ -92,6 +92,8 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --all-targets --locked -- -D warnings
       - run: cargo test --all-targets --locked
+      - name: Verify packaging dependency checks
+        run: python -m unittest discover -s scripts -p "test_*.py"
       - name: Verify isolated X11 window capture
         if: runner.os == 'Linux'
         run: xvfb-run -a cargo test --locked --test x11_capture -- --ignored

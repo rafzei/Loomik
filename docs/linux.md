@@ -1,9 +1,10 @@
 # Loomik on Ubuntu
 
-The Linux backend and packaging are implemented but **not yet built or tested
-on native Linux**. Hardware validation will be performed by the user after release. The CI
-workflow builds and installs the package and exercises X11 capture under Xvfb;
-its outcome is recorded in VERIFICATION.md.
+Native Ubuntu 24.04 CI builds and installs the `.deb`, runs the automated media
+tests and GUI smoke check, and exercises isolated X11 capture under Xvfb.
+Hardware validation will be performed by the user after release. Wayland portal,
+physical camera/microphone and compositor behavior remain unverified; CI evidence
+and its scope are recorded in [VERIFICATION.md](../VERIFICATION.md).
 
 ## Build and install
 
@@ -32,8 +33,8 @@ sudo apt install ./target/release/bundle/Loomik-1.0.0-Ubuntu-24.04-amd64.deb
 
 The `.deb` installs the app, desktop launcher and icon. APT installs FFmpeg and
 native runtime dependencies. Do not copy the binary to older distributions and
-assume ABI compatibility. The CI workflow produces this same package on Ubuntu;
-it has not been executed yet.
+assume ABI compatibility. The release download is the package built and checked
+on Ubuntu by the native CI workflow.
 
 ## Recording sources
 
@@ -82,7 +83,8 @@ measurement; no zero-latency guarantee is made.
 
 ## Hardware validation after release
 
-- Build, Clippy, tests and `.deb` installation on clean Ubuntu 24.04.
+- Install the release `.deb` on the target desktop; automated CI covers build,
+  Clippy, media tests and package installation on Ubuntu 24.04.
 - GNOME/KDE Wayland chooser, cancellation, re-selection, portal shutdown,
   mapped-memory negotiation, HiDPI geometry and exclusion of floating controls.
 - X11 window isolation under occlusion/movement, source resize/minimize/closure.
@@ -90,4 +92,5 @@ measurement; no zero-latency guarantee is made.
   1080p30/60 load, recorded flash/tone markers and physical lip sync.
 - Image/video backgrounds, all three output containers, PNG, countdown and quit.
 
-Docker and Ubuntu runtime checks were not run during this implementation step.
+CI uses native Ubuntu runners, without Docker. Xvfb checks cover a virtual X11
+display; they do not establish behavior on every physical desktop/compositor.
