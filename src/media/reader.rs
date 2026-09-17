@@ -44,9 +44,8 @@ impl Reader {
 }
 
 fn read_image(source: &MediaSource, width: u32, height: u32) -> Result<VideoFrame> {
-    let mut decoder = image::ImageReader::open(&source.info.path)?
-        .with_guessed_format()?
-        .into_decoder()?;
+    // Recheck the current file: it may have changed since the source was probed.
+    let mut decoder = image_decoder(&source.info.path)?;
     let orientation = decoder.orientation()?;
     let mut image = image::DynamicImage::from_decoder(decoder)?;
     image.apply_orientation(orientation);

@@ -1,9 +1,10 @@
-# Release 1.0.0
+# Release packaging and publication
 
-The 1.0.0 release is authorized after automated build/package verification. The
-user will perform Windows and Ubuntu camera/microphone/compositor checks after
-publication. Those checks remain explicitly unverified in release notes;
-macOS hardware verification is recorded in VERIFICATION.md.
+Publish only artifacts that pass automated build/package verification. Release
+notes must distinguish CI results from physical capture tests; current evidence
+and remaining hardware checks are recorded in [VERIFICATION.md](../VERIFICATION.md).
+Released assets are immutable. Security fixes require a new version, release
+notes and verified packages; never replace the existing 1.0.0 downloads.
 
 ## Downloads
 
@@ -39,9 +40,8 @@ resulting OS prompts.
 
 ## Publish verified packages
 
-Application ZIP/DMG/DEB downloads live in **GitHub Releases**. GitHub's separate
-Packages section is a registry for formats such as npm and OCI; it does not host
-these desktop installers. Actions artifacts are temporary build outputs.
+Application ZIP/DMG/DEB downloads live in **GitHub Releases**. Actions artifacts
+are temporary build outputs.
 
 1. Wait for all four jobs in `Native builds and verified packages` to pass on a
    push to `main`. Record the run ID. Prepare `docs/releases/X.Y.Z.md` and the
@@ -78,4 +78,3 @@ these desktop installers. Actions artifacts are temporary build outputs.
 
 Repository settings and environment restrictions are configured in GitHub as well
 as workflow code; preserve them when moving or recreating the repository.
-No Docker is used.

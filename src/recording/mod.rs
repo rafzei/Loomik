@@ -114,7 +114,16 @@ fn run(
         .output_dir
         .join(format!("{stem}.{}", settings.format.extension()));
     let session = settings.output_dir.join(format!(".loomik-{id}"));
-    std::fs::create_dir(&session)?;
+    let mut session_dir = std::fs::DirBuilder::new();
+    session_dir.recursive(false);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        // Recovery contains raw microphone audio and source paths. Restrict
+        // access at creation, even when the output directory is shared.
+        session_dir.mode(0o700);
+    }
+    session_dir.create(&session)?;
     std::fs::write(
         session.join("session.json"),
         serde_json::to_vec_pretty(

@@ -22,8 +22,7 @@ illustrated camera portrait. It is not a real screen or webcam capture and conta
 no user documents, device identifiers, or account details. The project artwork
 does not replace the installed app's macOS bundle identity or privacy grants.
 
-These are code-generated vector assets, rendered to PNG with native macOS tools;
-no image-generation model or external asset service was used. The source is
+The vector source is
 [`scripts/make-brand-assets.py`](../../scripts/make-brand-assets.py).
 
 Regenerate the SVGs with Python's standard library:

@@ -2,9 +2,9 @@
 
 Native Ubuntu 24.04 CI builds and installs the `.deb`, runs the automated media
 tests and GUI smoke check, and exercises isolated X11 capture under Xvfb.
-Hardware validation will be performed by the user after release. Wayland portal,
-physical camera/microphone and compositor behavior remain unverified; CI evidence
-and its scope are recorded in [VERIFICATION.md](../VERIFICATION.md).
+Wayland portal, physical camera/microphone and compositor behavior remain
+unverified; CI evidence and its scope are recorded in
+[VERIFICATION.md](../VERIFICATION.md).
 
 ## Build and install
 
@@ -81,7 +81,7 @@ timestamps in this path, so it uses the synchronous pixmap read midpoint as an
 estimate. That estimate, device exposure latency and physical lip sync need real
 measurement; no zero-latency guarantee is made.
 
-## Hardware validation after release
+## Remaining hardware validation
 
 - Install the release `.deb` on the target desktop; automated CI covers build,
   Clippy, media tests and package installation on Ubuntu 24.04.

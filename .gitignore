@@ -2,3 +2,12 @@
 /artifacts/
 .DS_Store
 __pycache__/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.loomik-*/
+*.performance.json

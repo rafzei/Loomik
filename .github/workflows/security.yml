@@ -1,0 +1,39 @@
+name: Dependency security audit
+
+on:
+  push:
+    branches: [main]
+    paths: ['Cargo.toml', 'Cargo.lock', '.cargo/audit.toml', '.github/workflows/security.yml']
+  pull_request:
+    branches: [main]
+    paths: ['Cargo.toml', 'Cargo.lock', '.cargo/audit.toml', '.github/workflows/security.yml']
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: >-
+      github.repository == 'rafzei/Loomik' &&
+      (github.event_name != 'workflow_dispatch' ||
+       (github.ref == 'refs/heads/main' && github.actor == 'rafzei' && github.triggering_actor == 'rafzei'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
+      - name: Install pinned auditor
+        run: cargo install cargo-audit --version 0.22.2 --locked
+      - name: Check all locked dependencies against current RustSec advisories
+        run: cargo audit
