@@ -63,7 +63,7 @@ def verify_binary(path, arch):
                   "mf.dll", "mfplat.dll", "mfreadwrite.dll", "mfuuid.dll", "strmiids.dll",
                   # Video for Windows imports used by source-built FFmpeg.
                   "avicap32.dll", "msvfw32.dll",
-                  # Windows 10 system APIs imported by the native app: random
+                  # Windows system APIs imported by the native app: random
                   # generation, dispatcher queues, audio devices, processes, UI.
                   "bcryptprimitives.dll", "coremessaging.dll", "mmdevapi.dll",
                   "psapi.dll", "uxtheme.dll"}
@@ -91,6 +91,16 @@ def verify_install(executable, output):
     if result["status"] != "passed":
         raise RuntimeError("Packaged application verification failed")
     return result
+
+
+def write_windows_archive(app, archive):
+    # Cargo/source archives can preserve Unix-epoch license timestamps. ZIP's
+    # DOS date field starts in 1980; clamp metadata without altering file bytes.
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED, compresslevel=6,
+                         strict_timestamps=False) as zip:
+        for file in sorted(app.rglob("*")):
+            if file.is_file():
+                zip.write(file, file.relative_to(app.parent))
 
 
 def main():
@@ -161,10 +171,7 @@ def main():
         if mac:
             run("ditto", "-c", "-k", "--sequesterRsrc", "--keepParent", app, archive)
         else:
-            with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as zip:
-                for file in sorted(app.rglob("*")):
-                    if file.is_file():
-                        zip.write(file, file.relative_to(stage))
+            write_windows_archive(app, archive)
         # Check the extracted archive, including paths containing spaces. Verify
         # that Finder/Explorer downloads retain all files and executable modes.
         extracted = stage / "Install check with spaces"

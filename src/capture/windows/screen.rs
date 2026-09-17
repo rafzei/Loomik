@@ -65,7 +65,7 @@ fn window_bounds(id: u64) -> Result<Bounds> {
 pub fn discover_sources() -> Result<Vec<Source>> {
     ensure!(
         screen_permission(),
-        "Windows Graphics Capture is unavailable. Windows 10 version 2004 or later is required."
+        "Windows Graphics Capture is unavailable. Loomik requires Windows 11."
     );
     let mut sources = Vec::new();
     for (i, monitor) in Monitor::enumerate()?.into_iter().enumerate() {

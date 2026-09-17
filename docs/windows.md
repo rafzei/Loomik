@@ -7,9 +7,14 @@ PATH. **Physical screen/camera/microphone capture, GUI behavior, mixed-DPI and
 performance measurements remain unverified on Windows.** See
 [VERIFICATION.md](../VERIFICATION.md) for the CI evidence and its scope.
 
+The supported desktop system is **Windows 11 x64**. CI uses the GitHub-hosted
+`windows-2025` image (Windows Server 2025) as its build/test environment; that
+runner label is not a list of supported desktop Windows versions. Server CI
+does not replace physical Windows 11 GUI and capture acceptance tests.
+
 ## Build on Windows
 
-Requires Windows 10 version 2004 (build 19041) or Windows 11, x64; Rust 1.88+
+Requires Windows 11 (build 22000 or later), x64; Rust 1.88+
 with the MSVC target; Visual Studio C++ Build Tools and Windows SDK; and FFmpeg
 with FFprobe and libx264 on PATH. Installing FFmpeg via Chocolatey is one option:
 
@@ -40,7 +45,7 @@ is unsigned. User-supplied tools can be selected with `LOOMIK_FFMPEG` /
 - Camera uses Windows MediaCapture/MediaFrameReader, selects a fast mode up to
   60 fps when available, converts to BGRA with a bounded-size realtime preview,
   and requests only video. Microphone capture is independent through WASAPI.
-- In Windows Settings → Privacy (Windows 10) or Privacy & security (Windows 11),
+- In Windows Settings → Privacy & security,
   enable Camera and Microphone access, including access for desktop apps.
   If a device is busy, close any application using it exclusively and refresh.
 - Every Loomik top-level window is marked `WDA_EXCLUDEFROMCAPTURE` before it is

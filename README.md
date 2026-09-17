@@ -55,7 +55,7 @@ The graphic above is a product illustration using demo content.
 | Platform | Current status |
 | --- | --- |
 | macOS 13+ | Native CI for Apple Silicon and Intel; hardware capture verified on macOS 26.1 / Apple Silicon |
-| Windows 10 2004+ / 11 | Native MSVC CI and standalone package checks; WGC, camera and microphone hardware validation pending |
+| Windows 11 x64 | Native MSVC CI and standalone package checks; WGC, camera and microphone hardware validation pending |
 | Ubuntu 24.04 x86_64 | Native CI, `.deb` installation, GUI smoke and isolated X11 capture checks; Wayland and device hardware validation pending |
 
 Hardware recording has been verified on **macOS**, including image/video backgrounds.

@@ -26,7 +26,7 @@ impl Drop for WindowProtection {
 pub fn install() -> Result<WindowProtection> {
     ensure!(
         supported_version(),
-        "Windows 10 version 2004 or newer is required for capture exclusion"
+        "Loomik requires Windows 11 for screen and window capture"
     );
     let hook = unsafe {
         SetWindowsHookExW(
@@ -48,7 +48,8 @@ pub fn supported_version() -> bool {
         dwOSVersionInfoSize: std::mem::size_of::<OSVERSIONINFOW>() as u32,
         ..Default::default()
     };
-    unsafe { RtlGetVersion(&mut version) }.is_ok() && version.dwBuildNumber >= 19041
+    // Windows 11 still reports NT 10.0; its first build is 22000.
+    unsafe { RtlGetVersion(&mut version) }.is_ok() && version.dwBuildNumber >= 22000
 }
 unsafe extern "system" fn before_window_message(code: i32, w: WPARAM, l: LPARAM) -> LRESULT {
     if code >= 0 && l.0 != 0 {
@@ -70,7 +71,7 @@ unsafe extern "system" fn before_window_message(code: i32, w: WPARAM, l: LPARAM)
                         unsafe { SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE) }
                 {
                     *ERROR.lock().unwrap() = Some(format!(
-                        "Cannot exclude Loomik controls from capture: {error}. Windows 10 version 2004 or later is required."
+                        "Cannot exclude Loomik controls from capture: {error}. Loomik requires Windows 11."
                     ));
                 }
             }

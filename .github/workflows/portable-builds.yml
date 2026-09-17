@@ -7,6 +7,7 @@ permissions:
   contents: read
 jobs:
   verify:
+    name: Build/package ${{ matrix.platform }} (runner ${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -15,7 +16,7 @@ jobs:
             platform: macos-arm64
           - os: macos-15-intel
             platform: macos-x86_64
-          - os: windows-2022
+          - os: windows-2025
             platform: windows-x64
           - os: ubuntu-24.04
             platform: ubuntu-amd64

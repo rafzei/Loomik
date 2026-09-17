@@ -1,4 +1,4 @@
-Loomik for Windows 10 version 2004 or later / Windows 11, x64
+Loomik for Windows 11, x64
 
 Extract the entire ZIP, then launch Loomik.exe. Keep ffmpeg.exe, ffprobe.exe and
 the media-tools folder together with it. Rust, Visual Studio and a separate

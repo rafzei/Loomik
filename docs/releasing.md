@@ -11,7 +11,7 @@ macOS hardware verification is recorded in VERIFICATION.md.
 | --- | --- |
 | macOS 13+, Apple Silicon | `Loomik-1.0.0-macOS-arm64.zip` and `.dmg` |
 | macOS 13+, Intel | `Loomik-1.0.0-macOS-x86_64.zip` and `.dmg` |
-| Windows 10 2004+ / 11 x64 | `Loomik-1.0.0-Windows-x64.zip` |
+| Windows 11 x64 | `Loomik-1.0.0-Windows-x64.zip` |
 | Ubuntu 24.04 LTS amd64 | `Loomik-1.0.0-Ubuntu-24.04-amd64.deb` |
 
 macOS/Windows packages include FFmpeg/FFprobe, licenses, corresponding source

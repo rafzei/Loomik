@@ -383,7 +383,8 @@ Windows implementation is under `src/capture/windows/`:
   timestamp offsets; it was compiled here, not executed on Windows.
 - A GUI-thread window-message hook sets `WDA_EXCLUDEFROMCAPTURE` before showing
   Loomik windows. Each screen frame verifies visible own-process window affinity
-  before publishing pixels. Windows builds older than 19041 are rejected.
+  before publishing pixels. The initial minimum was build 19041; the release
+  minimum was subsequently raised to Windows 11, as recorded below.
 - Camera geometry uses native physical window coordinates and the camera
   viewport's pixel scale. Dragging reads the physical cursor without a blocking
   window-manager drag loop. Mixed-DPI behavior remains unverified on hardware.
@@ -455,7 +456,8 @@ push, or release publication was performed in this step.
 ## Native CI and package gates — 2026-09-17
 
 The release workflow now runs on macOS 15 ARM64, macOS 15 Intel, Windows Server
-2022 with MSVC, and Ubuntu 24.04 amd64. It enforces formatting, Clippy with
+2025 with MSVC, and Ubuntu 24.04 amd64. The supported Windows desktop is Windows
+11 x64 (build 22000+); the Server image is only the CI host. It enforces formatting, Clippy with
 warnings denied, all applicable Rust test targets and packaging dependency
 regressions. macOS/Windows tests use the source-built media tools distributed
 with the application. The release throughput benchmark remains intentionally

@@ -74,8 +74,8 @@ account, subscription, or recording time limit is involved.
     playback controls, audio mixing, and export through the existing encoder.
     The output must come directly from media frames plus overlays, so unrelated
     desktop content and editor controls cannot enter the recording.
-11. [ ] **Windows implementation and native build** — support Windows 10 2004+
-    and Windows 11 initially on x86_64. Implement display/window capture using
+11. [ ] **Windows implementation and native build** — support Windows 11
+    on x86_64. Implement display/window capture using
     Windows Graphics Capture, native camera discovery/capture using Media
     Foundation or an equivalent maintained Rust adapter, and microphone input.
     Implement floating transparent windows, dragging/resizing, DPI handling, and

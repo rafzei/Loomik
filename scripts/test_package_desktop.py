@@ -1,8 +1,11 @@
 """Regression checks for the release dependency gate, without native build tools."""
 import importlib.util
+import os
 from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import patch
+import zipfile
 
 spec = importlib.util.spec_from_file_location(
     "package_desktop", Path(__file__).with_name("package-desktop.py")
@@ -68,6 +71,28 @@ class DependencyChecks(unittest.TestCase):
             "    KERNEL32.dll\n    VCRUNTIME140.dll\n    libgcc_s_seh-1.dll\n"
         )), self.assertRaisesRegex(RuntimeError, "libgcc_s_seh-1.dll, vcruntime140.dll"):
             package.verify_binary(Path("loomik.exe"), "x64")
+
+
+class ArchiveChecks(unittest.TestCase):
+    def test_epoch_dated_licenses_survive_windows_packaging(self):
+        with tempfile.TemporaryDirectory(prefix="loomik archive test ") as directory:
+            root = Path(directory)
+            app = root / "Loomik"
+            notices = app / "rust-notices" / "example-1.0.0"
+            notices.mkdir(parents=True)
+            license = notices / "LICENSE.txt"
+            license.write_bytes(b"License text\n")
+            os.utime(license, (0, 0))
+            (app / "Loomik.exe").write_bytes(b"application fixture")
+            output = root / "Loomik-Windows-x64.zip"
+            package.write_windows_archive(app, output)
+            with zipfile.ZipFile(output) as archive:
+                name = "Loomik/rust-notices/example-1.0.0/LICENSE.txt"
+                self.assertEqual(archive.read(name), license.read_bytes())
+                self.assertEqual(archive.getinfo(name).date_time, (1980, 1, 1, 0, 0, 0))
+                self.assertEqual(archive.read("Loomik/Loomik.exe"), b"application fixture")
+                self.assertIsNone(archive.testzip())
+            self.assertEqual(license.stat().st_mtime, 0)
 
 
 if __name__ == "__main__":
