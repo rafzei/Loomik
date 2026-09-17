@@ -74,6 +74,57 @@ fn image_canvas_preserves_aspect_transparency_and_jpeg_orientation() {
 }
 
 #[test]
+fn changed_image_is_checked_again_before_decoding() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("background.jpg");
+    image::RgbImage::new(16, 16).save(&path).unwrap();
+    let s = source(&path, MediaKind::Image);
+    let mut data = fs::read(&path).unwrap();
+    let sof = data.windows(2).position(|b| b == [0xff, 0xc0]).unwrap();
+    // Replace a previously accepted JPEG with a 100-megapixel header. Reject
+    // before allocating/decoding, even though cached metadata still says 16x16.
+    data[sof + 5..sof + 7].copy_from_slice(&10_000u16.to_be_bytes());
+    data[sof + 7..sof + 9].copy_from_slice(&10_000u16.to_be_bytes());
+    fs::write(&path, data).unwrap();
+    let error = match Reader::open(&s, 16, 16, 30) {
+        Ok(_) => panic!("Changed image bypassed the pixel limit"),
+        Err(error) => error,
+    };
+    assert!(error.to_string().contains("60 megapixels"), "{error:#}");
+}
+
+#[test]
+fn video_background_rejects_playlists_even_with_a_movie_extension() {
+    let dir = tempfile::tempdir().unwrap();
+    let clip = dir.path().join("source.mp4");
+    ffmpeg(
+        &[
+            "-f",
+            "lavfi",
+            "-i",
+            "color=red:s=32x32:r=30:d=1",
+            "-c:v",
+            "libx264",
+        ],
+        &clip,
+    );
+    let mut s = source(&clip, MediaKind::Video);
+    let playlist = dir.path().join("disguised.mp4");
+    fs::write(
+        &playlist,
+        "ffconcat version 1.0\nfile source.mp4\nduration 1\n",
+    )
+    .unwrap();
+    let error = media::probe(&playlist, MediaKind::Video).unwrap_err();
+    assert!(error.to_string().contains("whitelist"), "{error:#}");
+
+    // Playback must enforce the same policy if the source changes after probe.
+    s.info.path = playlist;
+    let mut reader = Reader::open(&s, 32, 32, 30).unwrap();
+    assert!(reader.next_frame().is_err());
+}
+
+#[test]
 fn video_seeking_hold_loop_vfr_and_rotation_decode_incrementally() {
     let dir = tempfile::tempdir().unwrap();
     let clip = dir.path().join("source.mp4");
@@ -183,6 +234,24 @@ fn media_worker_records_without_desktop_capture_and_preserves_pause() {
         recording::Event::Ready
     ));
     assert_eq!(recording.elapsed(), Duration::ZERO);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let session = fs::read_dir(dir.path().join("movies"))
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .find(|path| {
+                path.file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .starts_with(".loomik-")
+            })
+            .unwrap();
+        assert_eq!(
+            fs::metadata(session).unwrap().permissions().mode() & 0o777,
+            0o700
+        );
+    }
     recording.command(recording::Command::Begin);
     assert!(matches!(
         recording

@@ -65,7 +65,7 @@ an individual window, with the camera positioned inside Recording studio.
 Whole-monitor and cursor capture are unavailable on Linux. Build, media and package
 checks run on native GitHub Actions runners; their scope is recorded in
 [VERIFICATION.md](VERIFICATION.md). They do not replace physical device tests.
-See the [implementation plan](loomik-plan.md). System/desktop audio is not captured.
+System/desktop audio is not captured.
 
 ## Downloads
 
@@ -85,13 +85,13 @@ Developer tools are only needed when building from source.
 
 macOS builds are ad-hoc signed, not notarized; Windows builds are unsigned.
 Hardware capture on macOS has been verified. Windows and Ubuntu camera,
-microphone and compositor checks will be performed after release; see
+microphone and compositor checks remain unverified; see
 [Windows](docs/windows.md), [Ubuntu](docs/linux.md) and [verification](VERIFICATION.md).
 
 ## Build from source on macOS
 
 Requires **macOS 13 or later**, Rust 1.88+, a current full Xcode installation
-(CI uses Xcode 26.3), and FFmpeg with `libx264`. The ScreenCaptureKit bindings
+(CI selects the latest stable Xcode), and FFmpeg with `libx264`. The ScreenCaptureKit bindings
 compile a Swift/Metal bridge that needs the current SDK; older Command Line
 Tools alone may fail with missing Metal API members. Select the installed Xcode
 with `sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer`. Then:
@@ -212,6 +212,7 @@ a microphone, raw `microphone.f32`. The folder is removed only after a successfu
 save or an explicitly confirmed discard. Errors leave it intact for recovery.
 Media sessions also include `background.json` with the source path, seek/loop,
 canvas, and audio settings. The source file itself is not copied.
+On macOS/Linux, recovery folders are accessible only to their owner (`0700`).
 Finalization briefly needs space for both the working movie and final movie.
 
 To recover a video from an interrupted session:
@@ -320,12 +321,11 @@ directory for each hardware run. A normal launch also accepts `--media PATH`.
 Native adapters are isolated under `src/capture/macos/`, `src/capture/windows/`
 and `src/capture/linux/`.
 Windows uses WGC, MediaCapture and WASAPI with QPC timestamp alignment and checks
-control-window exclusion before publishing screen frames. Native Windows capture
-has not yet been tested on Windows. Linux uses portal/PipeWire on Wayland,
-XComposite on X11, V4L2 cameras and CPAL/ALSA microphones; its native build and
-runtime validation are deferred. Older Linux cross-target checks predate this backend.
+control-window exclusion before publishing screen frames. Physical Windows capture
+remains unverified. Linux uses portal/PipeWire on Wayland, XComposite on X11,
+V4L2 cameras and CPAL/ALSA microphones.
 `.github/workflows/portable-builds.yml` defines native CI checks and build artifacts,
-but has not executed yet. Experimental builds use Rust and FFmpeg/FFprobe.
+with successful release-build evidence in [VERIFICATION.md](VERIFICATION.md).
 Windows uses the MSVC toolchain, Visual Studio C++ Build Tools, and
 [`scripts/bundle-windows.ps1`](scripts/bundle-windows.ps1); Ubuntu uses
 [`scripts/bundle-linux.sh`](scripts/bundle-linux.sh) with the native dependencies
@@ -335,40 +335,36 @@ The app has no cloud services, updater, or external network requests at runtime.
 
 Version **1.0.0** packages are built and checked by GitHub Actions on each OS.
 The [release checklist](docs/releasing.md) records automated checks and the
-Windows/Ubuntu hardware validation scheduled after publication.
+remaining Windows/Ubuntu hardware validation.
 
 ## Project structure
 
 | Path | Responsibility |
 | --- | --- |
 | [`src/app.rs`](src/app.rs), [`src/ui/`](src/ui/) | Floating settings, recording toolbar, device selectors, and camera preview |
-| [`src/capture/`](src/capture/) | macOS ScreenCaptureKit/AVFoundation and Windows WGC/MediaCapture/WASAPI, permissions and clocks |
+| [`src/capture/`](src/capture/) | Native macOS, Windows and Linux capture, permissions and clocks |
 | [`src/media/`](src/media/) | File metadata, oriented images, bounded video decoding, and canvas options |
 | [`src/recording/`](src/recording/) | Shared frame sources, camera composition, audio alignment/mixing, encoding, and export |
 | [`src/platform.rs`](src/platform.rs) | Finder/Explorer/Linux file reveal |
 | [`src/model.rs`](src/model.rs) | Settings, recording state, geometry, and the pause-aware timeline |
 | [`tests/`](tests/) | Media export/decode, synchronization, and performance checks |
-| [`scripts/`](scripts/) | macOS packaging, verification helpers, and brand asset generation |
+| [`scripts/`](scripts/) | Desktop packaging, release publication, verification and brand assets |
 
 ## Roadmap
 
-- [x] Load an image or video as the recording background, then record camera and
-  narration over it without capturing the desktop.
-- [x] Add source-video playback, looping, fit/fill controls, and optional audio mixing.
-- [x] Implement the Windows capture backend and MSVC packaging script.
-- [ ] Build and run natively on Windows, with native screen/camera/audio capture.
-- [ ] Build and run natively on Linux, with separate Wayland and X11 capture paths.
-- [x] Configure a native macOS/Windows/Linux build/test matrix.
-- [ ] Run the matrix and verify capture on each operating system.
+- Verify physical screen/camera/microphone capture and mixed DPI on Windows 11.
+- Verify Wayland portal behavior and physical devices on Ubuntu GNOME/KDE.
+- Measure long recordings, 4K throughput and physical audio/video synchronization.
 
 ## Contributing
 
 Bug reports and focused contributions are welcome through
 [GitHub issues](https://github.com/rafzei/Loomik/issues) and pull requests.
-For capture problems, include your macOS version, source type, camera/microphone,
+For capture problems, include your OS version, source type, camera/microphone,
 selected quality/fps, and the relevant `.performance.json` report. Review reports
 and logs for personal information before sharing; attaching a private recording
 is not required. Run the development checks above before submitting code changes.
+See [SECURITY.md](SECURITY.md) for media-file protections and dependency checks.
 
 ## License
 

@@ -4,12 +4,17 @@ macOS/Windows distribution archives include FFmpeg and FFprobe beside the
 application executable. Users do not need Rust, Homebrew, Chocolatey or a separate
 FFmpeg installation. Ubuntu's `.deb` uses FFmpeg from APT instead.
 
-The source build uses FFmpeg 8.0.1 and a fixed x264 commit; exact upstream URLs
+The source build uses FFmpeg 8.0.3 and a fixed x264 commit; exact upstream URLs
 and SHA-256 checksums are in `packaging/media-sources.env`. Windows additionally
 includes NVIDIA codec headers 12.1.14.0 for NVENC. These are separate processes
 with static codec libraries and system-only dynamic dependencies. Network
 protocols are disabled in bundled FFmpeg. Local media decoding, filters, H.264
 encoding and AAC audio remain enabled.
+
+FFmpeg 8.0.3 includes the 8.0-series security fixes listed by
+[upstream](https://ffmpeg.org/security.html), including CVE-2025-67306,
+CVE-2026-8461 and CVE-2026-30999. The already published Loomik 1.0.0 archives
+contain FFmpeg 8.0.1; changing the build manifest does not update those downloads.
 
 macOS includes VideoToolbox and x264. The initial Windows bundle includes NVENC
 and x264. QSV/AMF probes remain available with an external FFmpeg build containing
@@ -18,7 +23,7 @@ compatibility and performance require native hardware measurements.
 
 ## Build on macOS
 
-Install Xcode Command Line Tools and `pkg-config`. Intel builds also need `nasm`
+Install a current full Xcode and `pkg-config`. Intel builds also need `nasm`
 for assembly; Apple Silicon uses Clang's assembler. Python 3.11+ is required.
 
 ```sh

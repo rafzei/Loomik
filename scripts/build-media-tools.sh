@@ -37,7 +37,7 @@ digest() { if command -v sha256sum >/dev/null; then sha256sum "$1"; else shasum 
 download() {
   local filename="$1" url="$2" expected="$3" actual
   if [[ ! -f "$archive_dir/$filename" ]]; then
-    curl -fL --retry 3 --output "$archive_dir/$filename.download" "$url"
+    curl --proto '=https' --proto-redir '=https' -fL --retry 3 --output "$archive_dir/$filename.download" "$url"
     mv "$archive_dir/$filename.download" "$archive_dir/$filename"
   fi
   actual="$(digest "$archive_dir/$filename")"

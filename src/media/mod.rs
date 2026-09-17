@@ -13,6 +13,27 @@ use std::{
     process::Command,
 };
 
+// File backgrounds are self-contained movies, never playlists that can open
+// additional local files. Apply this to probing, playback and audio export.
+const LOCAL_VIDEO_INPUT: [&str; 4] = [
+    "-protocol_whitelist",
+    "file",
+    "-format_whitelist",
+    "mov,matroska,webm",
+];
+
+fn image_decoder(path: &Path) -> Result<impl ImageDecoder + use<>> {
+    let decoder = image::ImageReader::open(path)?
+        .with_guessed_format()?
+        .into_decoder()?;
+    let (width, height) = decoder.dimensions();
+    ensure!(
+        width > 0 && height > 0 && width as u64 * height as u64 <= 60_000_000,
+        "Image is too large or empty (maximum 60 megapixels)."
+    );
+    Ok(decoder)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MediaKind {
     Image,
@@ -131,13 +152,9 @@ impl MediaSource {
             command.args(["-stream_loop", "-1"]);
         }
         command
-            .args([
-                "-ss",
-                &format!("{:.9}", self.options.start),
-                "-protocol_whitelist",
-                "file,pipe",
-                "-i",
-            ])
+            .args(["-ss", &format!("{:.9}", self.options.start)])
+            .args(LOCAL_VIDEO_INPUT)
+            .arg("-i")
             .arg(&self.info.path);
     }
 }
@@ -148,14 +165,8 @@ pub fn probe(path: &Path, kind: MediaKind) -> Result<MediaInfo> {
         .canonicalize()
         .context("Cannot open the background file")?;
     if kind == MediaKind::Image {
-        let mut decoder = image::ImageReader::open(&path)?
-            .with_guessed_format()?
-            .into_decoder()?;
+        let mut decoder = image_decoder(&path)?;
         let (mut width, mut height) = decoder.dimensions();
-        ensure!(
-            width as u64 * height as u64 <= 60_000_000,
-            "Image is too large (maximum 60 megapixels)."
-        );
         let orientation = decoder.orientation()?;
         if matches!(
             orientation,
@@ -175,7 +186,18 @@ pub fn probe(path: &Path, kind: MediaKind) -> Result<MediaInfo> {
             has_audio: false,
         });
     }
-    let output=media_command(ffprobe_path()?).args(["-v","error","-protocol_whitelist","file,pipe","-show_entries","stream=codec_type,width,height,sample_aspect_ratio:stream_side_data=rotation:format=duration","-of","json"]).arg(&path).output().context("Cannot inspect the video")?;
+    let output = media_command(ffprobe_path()?)
+        .args(["-v", "error"])
+        .args(LOCAL_VIDEO_INPUT)
+        .args([
+            "-show_entries",
+            "stream=codec_type,width,height,sample_aspect_ratio:stream_side_data=rotation:format=duration",
+            "-of",
+            "json",
+        ])
+        .arg(&path)
+        .output()
+        .context("Cannot inspect the video")?;
     ensure!(
         output.status.success(),
         "Cannot read this video: {}",
