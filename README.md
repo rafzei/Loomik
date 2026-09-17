@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="#quick-start">Quick start</a> ·
+  <a href="#downloads">Downloads</a> ·
   <a href="#what-you-can-do">Features</a> ·
   <a href="#platform-support">Platforms</a> ·
   <a href="#roadmap">Roadmap</a>
@@ -69,10 +69,18 @@ See the [implementation plan](loomik-plan.md). System/desktop audio is not captu
 
 ## Downloads
 
-Download the package for your system from [GitHub Releases](https://github.com/rafzei/Loomik/releases).
-macOS ZIP/DMG files are provided for Apple Silicon (`arm64`) and Intel (`x86_64`).
-Windows uses an x64 ZIP; Ubuntu 24.04 uses an amd64 `.deb`. macOS and Windows
-packages include FFmpeg/FFprobe. Ubuntu installs its dependencies through APT.
+Download **[Loomik 1.0.0](https://github.com/rafzei/Loomik/releases/tag/v1.0.0)**:
+
+| System | Download |
+| --- | --- |
+| macOS 13+, Apple Silicon | [DMG](https://github.com/rafzei/Loomik/releases/download/v1.0.0/Loomik-1.0.0-macOS-arm64.dmg) · [ZIP](https://github.com/rafzei/Loomik/releases/download/v1.0.0/Loomik-1.0.0-macOS-arm64.zip) |
+| macOS 13+, Intel | [DMG](https://github.com/rafzei/Loomik/releases/download/v1.0.0/Loomik-1.0.0-macOS-x86_64.dmg) · [ZIP](https://github.com/rafzei/Loomik/releases/download/v1.0.0/Loomik-1.0.0-macOS-x86_64.zip) |
+| Windows 11, x64 | [ZIP](https://github.com/rafzei/Loomik/releases/download/v1.0.0/Loomik-1.0.0-Windows-x64.zip) |
+| Ubuntu 24.04 LTS, amd64 | [DEB](https://github.com/rafzei/Loomik/releases/download/v1.0.0/Loomik-1.0.0-Ubuntu-24.04-amd64.deb) |
+
+[SHA-256 checksums](https://github.com/rafzei/Loomik/releases/download/v1.0.0/SHA256SUMS)
+are included with the release. macOS and Windows packages include FFmpeg/FFprobe.
+Ubuntu installs its dependencies through APT.
 Developer tools are only needed when building from source.
 
 macOS builds are ad-hoc signed, not notarized; Windows builds are unsigned.
