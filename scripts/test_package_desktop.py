@@ -55,6 +55,14 @@ class DependencyChecks(unittest.TestCase):
             package.verify_binary(Path("ffmpeg.exe"), "x64")
 
     @patch.object(package.sys, "platform", "win32")
+    def test_windows_native_capture_and_ui_system_imports(self):
+        with patch.object(package.subprocess, "check_output", return_value=(
+            "    bcryptPrimitives.dll\n    CoreMessaging.dll\n    MMDevAPI.dll\n"
+            "    PSAPI.DLL\n    UxTheme.dll\n    api-ms-win-core-winrt-l1-1-0.dll\n"
+        )):
+            package.verify_binary(Path("loomik.exe"), "x64")
+
+    @patch.object(package.sys, "platform", "win32")
     def test_external_windows_runtimes_remain_rejected(self):
         with patch.object(package.subprocess, "check_output", return_value=(
             "    KERNEL32.dll\n    VCRUNTIME140.dll\n    libgcc_s_seh-1.dll\n"

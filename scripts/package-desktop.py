@@ -62,7 +62,11 @@ def verify_binary(path, arch):
                   "runtimeobject.dll", "combase.dll", "windowsapp.dll", "winspool.drv",
                   "mf.dll", "mfplat.dll", "mfreadwrite.dll", "mfuuid.dll", "strmiids.dll",
                   # Video for Windows imports used by source-built FFmpeg.
-                  "avicap32.dll", "msvfw32.dll"}
+                  "avicap32.dll", "msvfw32.dll",
+                  # Windows 10 system APIs imported by the native app: random
+                  # generation, dispatcher queues, audio devices, processes, UI.
+                  "bcryptprimitives.dll", "coremessaging.dll", "mmdevapi.dll",
+                  "psapi.dll", "uxtheme.dll"}
         libraries = sorted({line.strip().lower() for line in text.splitlines()
                             if line.strip().lower().endswith((".dll", ".drv"))})
         print(f"{path.name} dependencies: {', '.join(libraries)}")
