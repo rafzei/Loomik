@@ -83,6 +83,14 @@ cargo test --release --test performance --locked -- --ignored --nocapture
 
 ## Reproduce hardware checks
 
+Camera-only source validation on 2026-09-18 (macOS ARM64): **37 Rust tests passed**,
+with formatting, Clippy, and a local release bundle build passing. Four camera
+regressions cover acquisition timestamps, full-frame resizing/mirroring, decoded
+movie edges, pause/resume, countdown cancellation, and recovery after disconnect.
+A GUI smoke check verified the camera-only settings and rectangular preview using
+synthetic frames. This does not establish physical camera/microphone behavior in
+the new mode or verify Windows/Linux builds.
+
 On macOS, use a fresh output directory and grant capture permissions:
 
 ```sh
@@ -93,7 +101,8 @@ python3 scripts/check-native.py artifacts/native-check
 ```
 
 Append `--media /absolute/path/to/background.mp4 --media-loop` to exercise a file
-background. Inspect the saved video and `native-result.json` to confirm which
+background, or `--camera-only` for a full camera frame without desktop capture.
+Inspect the saved video and `native-result.json` to confirm which
 devices were used, control exclusion, camera placement and audio. UI smoke tests
 use a synthetic camera texture and do not establish capture behavior.
 

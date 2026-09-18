@@ -121,6 +121,59 @@ impl LatestFrame {
     }
 }
 
+/// Full camera frame, preserving its rectangular field of view. Cache repeated
+/// frames so exporting at a higher frame rate does not repeat resizing work.
+#[derive(Default)]
+pub struct CameraFrameRenderer {
+    cached: Option<VideoFrame>,
+    mirror: bool,
+}
+impl CameraFrameRenderer {
+    pub fn render(
+        &mut self,
+        camera: &VideoFrame,
+        width: u32,
+        height: u32,
+        mirror: bool,
+    ) -> &VideoFrame {
+        if self.cached.as_ref().is_none_or(|frame| {
+            frame.captured_at != camera.captured_at
+                || frame.width != width
+                || frame.height != height
+                || self.mirror != mirror
+        }) {
+            // Resizing treats all four BGRA channels equally; no color conversion.
+            let image = image::ImageBuffer::<image::Rgba<u8>, _>::from_raw(
+                camera.width,
+                camera.height,
+                camera.bgra.as_slice(),
+            )
+            .expect("Camera frames contain packed BGRA pixels");
+            let mut image = if (camera.width, camera.height) == (width, height) {
+                image::RgbaImage::from_raw(width, height, camera.bgra.clone()).unwrap()
+            } else {
+                image::imageops::resize(
+                    &image,
+                    width,
+                    height,
+                    image::imageops::FilterType::Triangle,
+                )
+            };
+            if mirror {
+                image::imageops::flip_horizontal_in_place(&mut image);
+            }
+            self.cached = Some(VideoFrame {
+                width,
+                height,
+                bgra: image.into_raw(),
+                captured_at: camera.captured_at,
+            });
+            self.mirror = mirror;
+        }
+        self.cached.as_ref().unwrap()
+    }
+}
+
 /// Cache the circular crop/mirror/edge geometry. Rebuild only when dimensions or
 /// placement change, not for every camera frame; reuse the screen scratch buffer.
 #[derive(Default)]

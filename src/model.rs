@@ -117,16 +117,24 @@ pub struct Source {
 pub enum RecordingSource {
     Desktop(Source),
     Media(crate::media::MediaSource),
+    Camera { width: u32, height: u32 },
 }
 impl RecordingSource {
     pub fn dimensions(&self, quality: Quality) -> (u32, u32) {
         match self {
             Self::Desktop(s) => quality.dimensions(s.pixel_width, s.pixel_height),
             Self::Media(s) => s.dimensions(quality),
+            Self::Camera { width, height } => quality.dimensions(*width, *height),
         }
     }
     pub fn requires_screen_permission(&self) -> bool {
         matches!(self, Self::Desktop(_))
+    }
+    pub fn is_camera(&self) -> bool {
+        matches!(self, Self::Camera { .. })
+    }
+    pub fn is_live(&self) -> bool {
+        !matches!(self, Self::Media(_))
     }
 }
 
