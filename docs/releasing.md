@@ -10,10 +10,10 @@ notes and verified packages; never replace the existing 1.0.0 downloads.
 
 | Target | Assets |
 | --- | --- |
-| macOS 13+, Apple Silicon | `Loomik-1.0.0-macOS-arm64.zip` and `.dmg` |
-| macOS 13+, Intel | `Loomik-1.0.0-macOS-x86_64.zip` and `.dmg` |
-| Windows 11 x64 | `Loomik-1.0.0-Windows-x64.zip` |
-| Ubuntu 24.04 LTS amd64 | `Loomik-1.0.0-Ubuntu-24.04-amd64.deb` |
+| macOS 13+, Apple Silicon | `Loomik-1.1.0-macOS-arm64.zip` and `.dmg` |
+| macOS 13+, Intel | `Loomik-1.1.0-macOS-x86_64.zip` and `.dmg` |
+| Windows 11 x64 | `Loomik-1.1.0-Windows-x64.zip` |
+| Ubuntu 24.04 LTS amd64 | `Loomik-1.1.0-Ubuntu-24.04-amd64.deb` |
 
 macOS/Windows packages include FFmpeg/FFprobe, licenses, corresponding source
 archives and build recipes. Ubuntu installs runtime dependencies through APT.
@@ -33,7 +33,7 @@ resulting OS prompts.
   isolated XComposite window pixels beneath occluding controls. These tests do
   not substitute for Wayland portal or physical device checks.
 - Archive SHA-256 checksums match downloaded Actions artifacts. Attach those
-  exact tested archives to GitHub Release `v1.0.0`, with a combined checksum file.
+  exact tested archives to GitHub Release `v1.1.0`, with a combined checksum file.
 - Release notes describe actual verification and known limits: Linux window-only
   capture/no cursor, compositor-dependent window positioning, unsigned/notarized
   status, and outstanding Windows/Ubuntu hardware measurements.

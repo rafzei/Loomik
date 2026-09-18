@@ -10,7 +10,7 @@ use crate::{
     model::{CameraPlacement, Phase, RecordingClock, RecordingSource, Settings},
     recording::{
         encoder::Encoder,
-        frame::{CameraCompositor, LatestFrame},
+        frame::{CameraCompositor, CameraFrameRenderer, LatestFrame},
     },
 };
 use anyhow::{Context, Result};
@@ -171,7 +171,9 @@ fn record(
     let source = &request.source;
     // Linux studio consumes the newest native frame directly. Its live preview
     // must not wait for the recorder's timestamp assembly allowance.
-    let screen = if cfg!(target_os = "linux") && source.requires_screen_permission() {
+    let screen = if source.is_camera() {
+        request.camera.clone()
+    } else if cfg!(target_os = "linux") && source.requires_screen_permission() {
         background.clone()
     } else {
         LatestFrame::default()
@@ -220,7 +222,7 @@ fn record(
         capture.check()?;
         anyhow::ensure!(
             wait_started.elapsed() < Duration::from_secs(15),
-            "No screen frames arrived. Check Screen Recording permission and that the source is still available."
+            "No video frames arrived. Check capture permission and that the source is still available."
         );
         thread::sleep(Duration::from_millis(20));
     }
@@ -244,6 +246,7 @@ fn record(
     // Acquisition history is bounded separately; no unbounded latency queue.
     let delivery_budget = Duration::from_millis(100);
     let mut compositor = CameraCompositor::default();
+    let mut camera_renderer = CameraFrameRenderer::default();
     let mut scratch = None;
     let mut last_screen = screen.get();
     let mut last_camera = None;
@@ -320,7 +323,7 @@ fn record(
         let selected = capture.frame_at(target)?;
         source_read_latency.add(read_started.elapsed());
         if let Some(selected) = selected {
-            if !source.requires_screen_permission() {
+            if !source.is_live() {
                 background.set_shared(selected.clone());
             }
             last_screen = Some(selected);
@@ -329,7 +332,7 @@ fn record(
         }
         let Some(screen_frame) = last_screen
             .as_ref()
-            .filter(|f| !source.requires_screen_permission() || f.captured_at <= target)
+            .filter(|f| !source.is_live() || f.captured_at <= target)
         else {
             continue;
         };
@@ -346,7 +349,16 @@ fn record(
         });
         let placement = *request.placement.lock().unwrap();
         let compose_started = Instant::now();
-        let bytes = if let Some(camera) = camera.filter(|_| placement.visible) {
+        let bytes = if source.is_camera() {
+            camera_age.add(target.saturating_duration_since(screen_frame.captured_at));
+            if previous_camera_time == Some(screen_frame.captured_at) {
+                repeated_camera += 1;
+            }
+            previous_camera_time = Some(screen_frame.captured_at);
+            &camera_renderer
+                .render(screen_frame, width, height, placement.mirror)
+                .bgra
+        } else if let Some(camera) = camera.filter(|_| placement.visible) {
             camera_age.add(target.saturating_duration_since(camera.captured_at));
             if previous_camera_time == Some(camera.captured_at) {
                 repeated_camera += 1;
@@ -378,7 +390,7 @@ fn record(
         (None, None)
     };
     let performance = serde_json::json!({
-        "source_kind":match source {RecordingSource::Desktop(s)=>format!("{:?}",s.kind).to_lowercase(),RecordingSource::Media(s)=>format!("{:?}",s.info.kind).to_lowercase()},
+        "source_kind":match source {RecordingSource::Desktop(s)=>format!("{:?}",s.kind).to_lowercase(),RecordingSource::Media(s)=>format!("{:?}",s.info.kind).to_lowercase(),RecordingSource::Camera { .. }=>"camera".into()},
         "source_frame_read":source_read_latency.report(),
         "encoder": encoder.backend, "hardware_fallback_reason": encoder.fallback_reason,
         "width": width, "height": height, "fps": settings.fps, "frames": encoder.frame_count,

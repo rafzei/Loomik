@@ -28,7 +28,7 @@ window recording; file backgrounds are still available.
 
 ```sh
 bash scripts/bundle-linux.sh --skip-build
-sudo apt install ./target/release/bundle/Loomik-1.0.0-Ubuntu-24.04-amd64.deb
+sudo apt install ./target/release/bundle/Loomik-1.1.0-Ubuntu-24.04-amd64.deb
 ```
 
 The `.deb` installs the app, desktop launcher and icon. APT installs FFmpeg and

@@ -32,6 +32,8 @@ The graphic above is a product illustration using demo content.
 ## What you can do
 
 - **Record a display or window** with optional cursor capture.
+- **Record your camera only** as a full rectangular frame, with an optional
+  microphone. No desktop capture or Screen Recording permission is needed.
 - **Record over a photo or video** in Background studio, with canvas-relative
   camera placement, aspect ratios, Fit/Fill, seeking, looping, and audio levels.
   File backgrounds do not use desktop capture or need Screen Recording permission.
@@ -151,6 +153,19 @@ display/window keeps it out of that recording. Overlapping edges are clipped.
 
 **Video / Photo** also switches to a PNG screenshot of the chosen source, with the
 same exclusions and optional camera circle.
+
+## Record only your camera
+
+1. Open the source selector and choose **Camera only**.
+2. Select a camera and, optionally, a microphone. The preview shows the full
+   rectangular frame that will be saved, including the **Mirror camera** setting.
+   Drag the preview to move it, or drag its bottom-right corner to resize it.
+   The image keeps its proportions; window size does not change the saved video.
+3. Click **Start Recording**. Countdown, pause/resume, and Stop work as usual.
+   **Photo** takes a PNG photo from the camera.
+
+This mode does not capture the desktop or require Screen Recording permission.
+Output dimensions follow the camera stream and selected quality limit.
 
 ## Record over an image or video
 
