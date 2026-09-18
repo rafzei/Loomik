@@ -31,7 +31,7 @@ unrelated `link.exe` utility ahead of the MSVC linker and fail during linking.
 
 Release packaging uses [source-built media tools](media-tools.md) and
 `scripts/bundle-windows.ps1` from an x64 Visual Studio developer shell. It creates
-`target/release/bundle/Loomik-1.0.0-Windows-x64.zip`, including FFmpeg/FFprobe,
+`target/release/bundle/Loomik-1.1.0-Windows-x64.zip`, including FFmpeg/FFprobe,
 licenses and corresponding source. Extract the entire folder and run Loomik.exe;
 no separate FFmpeg or Visual C++ runtime installation is required. The package
 is unsigned. User-supplied tools can be selected with `LOOMIK_FFMPEG` /

@@ -5,8 +5,8 @@
   <key>CFBundleDisplayName</key><string>Loomik</string>
   <!-- Stable identity preserves previously granted macOS privacy permissions. -->
   <key>CFBundleIdentifier</key><string>com.local-loom.recorder</string>
-  <key>CFBundleVersion</key><string>1.0.0</string>
-  <key>CFBundleShortVersionString</key><string>1.0.0</string>
+  <key>CFBundleVersion</key><string>1.1.0</string>
+  <key>CFBundleShortVersionString</key><string>1.1.0</string>
   <key>CFBundleExecutable</key><string>loomik</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
