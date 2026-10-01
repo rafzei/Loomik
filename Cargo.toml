@@ -31,7 +31,7 @@ objc2-foundation = "0.3"
 objc2-av-foundation = { version = "0.3", features = ["AVCaptureDevice", "AVCaptureInput", "AVCaptureSession", "AVCaptureSessionPreset", "AVCaptureVideoDataOutput", "AVCaptureOutputBase", "AVMediaFormat", "block2", "dispatch2", "objc2-core-media", "objc2-core-video"] }
 objc2-core-media = "0.3"
 objc2-core-video = "0.3"
-screencapturekit = { version = "10.0.3", features = ["macos_13_0"] }
+screencapturekit = { version = "11.0.0", features = ["macos_13_0"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows-capture = "2.0.1"
